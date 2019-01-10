@@ -13,14 +13,29 @@ import java.util.Set;
 /**
  * Created by Hans on 1/7/19.
  */
+
 public class Main {
     public static void main(String[] args){
-        int port = 9000;
+        final MyServer server = new MyServer("localhost", 9000);
+        server.run();
+    }
+}
+
+class MyServer {
+    String serverName;
+    int port;
+
+    public MyServer(String serverName, int port) {
+        this.serverName = serverName;
+        this.port = port;
+    }
+
+    public void run() {
         HttpServer server = null;
         try {
             server = HttpServer.create(new InetSocketAddress(port), 0);
         } catch (IOException e) {
-            System.out.println("Cannot create server at port");
+            System.out.println("Cannot create server at port!");
         }
         System.out.println("server started at " + port);
         server.createContext("/", new RootHandler());
