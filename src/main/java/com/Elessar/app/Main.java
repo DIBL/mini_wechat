@@ -20,7 +20,7 @@ public class Main {
         try {
             server = HttpServer.create(new InetSocketAddress(port), 0);
         } catch (IOException e) {
-            System.out.println("Cannot create server at port");
+            System.out.println("Cannot create server at port!");
         }
         System.out.println("server started at " + port);
         server.createContext("/", new RootHandler());
