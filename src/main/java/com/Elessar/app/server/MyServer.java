@@ -54,7 +54,12 @@ public class MyServer {
         public void handle(HttpExchange he) throws IOException {
             final String requestType = he.getRequestMethod();
             // Only process GET request
-            if (requestType.equals("POST")) {
+            if (!"GET".equals(requestType)) {
+                final String response = "NOT IMPLEMENTED\n";
+                he.sendResponseHeaders(501, response.length());
+                try (OutputStream os = he.getResponseBody()) {
+                    os.write(response.getBytes());
+                }
                 return ;
             }
 
@@ -65,7 +70,7 @@ public class MyServer {
                 System.out.println(request);
             }
 
-            final String response = "OK";
+            final String response = "OK\n";
             he.sendResponseHeaders(200, response.length());
             try (OutputStream os = he.getResponseBody()) {
                 os.write(response.getBytes());
