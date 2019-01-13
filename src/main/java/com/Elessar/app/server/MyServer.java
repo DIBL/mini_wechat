@@ -56,7 +56,7 @@ public class MyServer {
             // Only process GET request
             if (!"GET".equals(requestType)) {
                 final String response = "NOT IMPLEMENTED\n";
-                he.sendResponseHeaders(501, response.length());
+                he.sendResponseHeaders(501, response.length());  // 501 tells the caller that this method is not supported by the server
                 try (OutputStream os = he.getResponseBody()) {
                     os.write(response.getBytes());
                 }
