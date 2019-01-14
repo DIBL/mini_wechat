@@ -1,0 +1,13 @@
+syntax = "proto2";
+
+package proto;
+
+option java_package = "com.Elessar.proto";
+
+message User {
+  required string name = 1;
+  required string password = 2;
+  required string email = 3;
+  optional string number = 4;
+}
+
