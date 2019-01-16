@@ -4,10 +4,7 @@ import com.Elessar.app.server.MyServer;
 
 import com.example.tutorial.Addressbook.Person;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 
 
 /**
@@ -18,7 +15,7 @@ public class Main {
     public static void main(String[] args){
         final MyServer server = new MyServer("localhost", 9000);
         server.run();
-        testProtoBuf();
+        //testProtoBuf();
     }
 
     private static void testProtoBuf() {
