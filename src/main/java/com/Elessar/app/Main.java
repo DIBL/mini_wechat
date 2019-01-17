@@ -32,7 +32,7 @@ public class Main {
                 System.out.println(sendPersonData.toString());
             }
         } catch (IOException e) {
-            System.out.println("Cannot write to stream");
+            System.out.println("Server failed because: " + e.getMessage());
         }
 
     }

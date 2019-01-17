@@ -1,7 +1,6 @@
 package com.Elessar.app.server;
 
-//import org.apache.commons.io.IOUtils;
-import com.Elessar.proto.Registration.RegistrationRequest;
+import com.Elessar.app.client.User;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -20,12 +19,12 @@ import java.util.Scanner;
 public class MyServer {
     private final String serverName;
     private final int port;
-    private Map<String, RegistrationRequest> userData;
+    private Map<String, User> userData;
 
     public MyServer(String serverName, int port) {
         this.serverName = serverName;
         this.port = port;
-        userData = new HashMap<String, RegistrationRequest>();
+        userData = new HashMap<String, User>();
     }
 
     public void run() {
@@ -38,7 +37,7 @@ public class MyServer {
             server.start();
             System.out.println("server started at " + port);
         } catch (IOException e) {
-            System.out.println("Cannot create server at port!");
+            System.out.println("Cannot create server at port because " + e.getMessage());
         }
     }
 

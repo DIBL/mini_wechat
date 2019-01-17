@@ -1,5 +1,6 @@
 package com.Elessar.app.server;
 
+import com.Elessar.app.client.User;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.Elessar.proto.Registration.RegistrationResponse;
@@ -13,9 +14,9 @@ import java.util.Map;
  * Created by Hans on 1/15/19.
  */
 public class RegisterHandler implements HttpHandler {
-    private final Map<String, RegistrationRequest> userData;
+    private final Map<String, User> userData;
 
-    public RegisterHandler(Map<String, RegistrationRequest> userData) {
+    public RegisterHandler(Map<String, User> userData) {
         this.userData = userData;
     }
 
@@ -32,24 +33,21 @@ public class RegisterHandler implements HttpHandler {
             return ;
         }
 
-        try (InputStream is = he.getRequestBody()) {
-            RegistrationRequest regRequest = RegistrationRequest.parseFrom(is);
+        try (final InputStream is = he.getRequestBody()) {
+            final RegistrationRequest regRequest = RegistrationRequest.parseFrom(is);
+            final RegistrationResponse.Builder regResponse = RegistrationResponse.newBuilder();
+
             if (userData.containsKey(regRequest.getName())) {
-                final RegistrationResponse.Builder regResponse = RegistrationResponse.newBuilder();
-                regResponse.setSuccess(false);
-                regResponse.setFailReason("User Name Exists !");
-                he.sendResponseHeaders(200, 0);
-                try (OutputStream os = he.getResponseBody()){
-                    regResponse.build().writeTo(os);
-                }
+                regResponse.setSuccess(false).setFailReason("User Name " + regRequest.getName() + " Exists !");
+                he.sendResponseHeaders(400, 0);
             } else {
-                userData.put(regRequest.getName(), regRequest);
-                final RegistrationResponse.Builder regResponse = RegistrationResponse.newBuilder();
+                userData.put(regRequest.getName(), new User(regRequest.getName(), regRequest.getPassword(), regRequest.getEmail(), regRequest.getPhoneNumber()));
                 regResponse.setSuccess(true);
                 he.sendResponseHeaders(200, 0);
-                try (OutputStream os = he.getResponseBody()){
-                    regResponse.build().writeTo(os);
-                }
+            }
+
+            try (final OutputStream os = he.getResponseBody()){
+                regResponse.build().writeTo(os);
             }
         }
     }
