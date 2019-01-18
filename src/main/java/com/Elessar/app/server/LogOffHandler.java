@@ -40,7 +40,7 @@ public class LogOffHandler implements HttpHandler {
                 logoffResponse.setSuccess(false).setFailReason(userName + " is NOT a Registered User !");
                 he.sendResponseHeaders(400, 0);
             } else if (!userData.get(userName).getOnlineStatus()){
-                logoffResponse.setSuccess(false).setFailReason(userName + " is already offline !");
+                logoffResponse.setSuccess(false).setFailReason(userName + " is already log off !");
                 he.sendResponseHeaders(400, 0);
             } else {
                 userData.get(userName).setOffline();

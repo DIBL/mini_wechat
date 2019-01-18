@@ -43,6 +43,9 @@ public class LogOnHandler implements HttpHandler {
             } else if (!userData.get(userName).getPassword().equals(password)){
                 logonResponse.setSuccess(false).setFailReason("Incorrect Password !");
                 he.sendResponseHeaders(400, 0);
+            } else if (userData.get(userName).getOnlineStatus()) {
+                logonResponse.setSuccess(false).setFailReason(userName + " is already log on !");
+                he.sendResponseHeaders(400, 0);
             } else {
                 userData.get(userName).setOnline();
                 logonResponse.setSuccess(true);
