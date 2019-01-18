@@ -1,6 +1,10 @@
 package com.Elessar.app.client;
 
 
+import com.Elessar.proto.Logoff.LogoffRequest;
+import com.Elessar.proto.Logoff.LogoffResponse;
+import com.Elessar.proto.Logon.LogonRequest;
+import com.Elessar.proto.Logon.LogonResponse;
 import com.Elessar.proto.Registration.RegistrationResponse;
 import com.Elessar.proto.Registration.RegistrationRequest;
 import com.google.api.client.http.*;
@@ -17,6 +21,52 @@ public class MyClient {
 
     public MyClient(URL hostURL) {
         this.hostURL = hostURL;
+    }
+
+    public void logOn(String userName, String password) {
+        final LogonRequest.Builder logonReq= LogonRequest.newBuilder();
+        logonReq.setName(userName).setPassword(password);
+        try {
+            final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
+            final HttpRequestFactory REQ_FACTORY = HTTP_TRANSPORT.createRequestFactory();
+            final URL regURL = new URL(hostURL.toString() + "/logon");
+            final GenericUrl endURL = new GenericUrl(regURL);
+            final HttpContent content = new ProtoHttpContent(logonReq.build());
+            final HttpRequest postRequest = REQ_FACTORY.buildPostRequest(endURL, content);
+            final HttpResponse postResponse = postRequest.execute();
+            final LogonResponse logonResponse = LogonResponse.parseFrom(postResponse.getContent());
+
+            if (logonResponse.getSuccess()) {
+                System.out.println("User Log On Successfully !");
+            } else {
+                System.out.println("User Fail to Log On, Because: " + logonResponse.getFailReason());
+            }
+        } catch (IOException e) {
+            System.out.println("Log On request failed: " + e.getMessage());
+        }
+    }
+
+    public void logOff(String userName) {
+        final LogoffRequest.Builder logoffReq= LogoffRequest.newBuilder();
+        logoffReq.setName(userName);
+        try {
+            final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
+            final HttpRequestFactory REQ_FACTORY = HTTP_TRANSPORT.createRequestFactory();
+            final URL regURL = new URL(hostURL.toString() + "/logoff");
+            final GenericUrl endURL = new GenericUrl(regURL);
+            final HttpContent content = new ProtoHttpContent(logoffReq.build());
+            final HttpRequest postRequest = REQ_FACTORY.buildPostRequest(endURL, content);
+            final HttpResponse postResponse = postRequest.execute();
+            final LogoffResponse logoffResponse = LogoffResponse.parseFrom(postResponse.getContent());
+
+            if (logoffResponse.getSuccess()) {
+                System.out.println("User Log Off Successfully !");
+            } else {
+                System.out.println("User Fail to Log Off, Because: " + logoffResponse.getFailReason());
+            }
+        } catch (IOException e) {
+            System.out.println("Log Off request failed: " + e.getMessage());
+        }
     }
 
     public void register (String userName, String password, String email, String phoneNumber) {

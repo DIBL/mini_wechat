@@ -1,0 +1,14 @@
+syntax = "proto2";
+
+package proto;
+
+option java_package = "com.Elessar.proto";
+
+message LogoffRequest {
+  required string name = 1;
+}
+
+message LogoffResponse {
+  required bool success = 1;
+  optional string failReason = 2;
+}

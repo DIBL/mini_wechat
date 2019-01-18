@@ -1,21 +1,21 @@
 package com.Elessar.app.server;
 
+import com.Elessar.proto.Logon.LogonResponse;
+import com.Elessar.proto.Logon.LogonRequest;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import com.Elessar.proto.Registration.RegistrationResponse;
-import com.Elessar.proto.Registration.RegistrationRequest;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 
 /**
- * Created by Hans on 1/15/19.
+ * Created by Hans on 1/16/19.
  */
-public class RegisterHandler implements HttpHandler {
+public class LogOnHandler implements HttpHandler {
     private final Map<String, User> userData;
 
-    public RegisterHandler(Map<String, User> userData) {
+    public LogOnHandler(Map<String, User> userData) {
         this.userData = userData;
     }
 
@@ -33,21 +33,26 @@ public class RegisterHandler implements HttpHandler {
         }
 
         try (final InputStream is = he.getRequestBody()) {
-            final RegistrationRequest regRequest = RegistrationRequest.parseFrom(is);
-            final RegistrationResponse.Builder regResponse = RegistrationResponse.newBuilder();
-
-            if (userData.containsKey(regRequest.getName())) {
-                regResponse.setSuccess(false).setFailReason("User Name " + regRequest.getName() + " Exists !");
+            final LogonRequest logonRequest = LogonRequest.parseFrom(is);
+            final LogonResponse.Builder logonResponse = LogonResponse.newBuilder();
+            final String userName = logonRequest.getName();
+            final String password = logonRequest.getPassword();
+            if (!userData.containsKey(userName)) {
+                logonResponse.setSuccess(false).setFailReason("User Name " + userName + " is NOT Registered !");
+                he.sendResponseHeaders(400, 0);
+            } else if (!userData.get(userName).getPassword().equals(password)){
+                logonResponse.setSuccess(false).setFailReason("Incorrect Password !");
                 he.sendResponseHeaders(400, 0);
             } else {
-                userData.put(regRequest.getName(), new User(regRequest.getName(), regRequest.getPassword(), regRequest.getEmail(), regRequest.getPhoneNumber(), false));
-                regResponse.setSuccess(true);
+                userData.get(userName).setOnline();
+                logonResponse.setSuccess(true);
                 he.sendResponseHeaders(200, 0);
             }
 
             try (final OutputStream os = he.getResponseBody()){
-                regResponse.build().writeTo(os);
+                logonResponse.build().writeTo(os);
             }
         }
     }
+
 }

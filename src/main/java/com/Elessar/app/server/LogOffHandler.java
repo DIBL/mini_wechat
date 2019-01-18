@@ -1,21 +1,21 @@
 package com.Elessar.app.server;
 
+import com.Elessar.proto.Logoff.LogoffResponse;
+import com.Elessar.proto.Logoff.LogoffRequest;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import com.Elessar.proto.Registration.RegistrationResponse;
-import com.Elessar.proto.Registration.RegistrationRequest;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 
 /**
- * Created by Hans on 1/15/19.
+ * Created by Hans on 1/16/19.
  */
-public class RegisterHandler implements HttpHandler {
+public class LogOffHandler implements HttpHandler {
     private final Map<String, User> userData;
 
-    public RegisterHandler(Map<String, User> userData) {
+    public LogOffHandler(Map<String, User> userData) {
         this.userData = userData;
     }
 
@@ -33,21 +33,25 @@ public class RegisterHandler implements HttpHandler {
         }
 
         try (final InputStream is = he.getRequestBody()) {
-            final RegistrationRequest regRequest = RegistrationRequest.parseFrom(is);
-            final RegistrationResponse.Builder regResponse = RegistrationResponse.newBuilder();
-
-            if (userData.containsKey(regRequest.getName())) {
-                regResponse.setSuccess(false).setFailReason("User Name " + regRequest.getName() + " Exists !");
+            final LogoffRequest logoffRequest = LogoffRequest.parseFrom(is);
+            final LogoffResponse.Builder logoffResponse = LogoffResponse.newBuilder();
+            final String userName = logoffRequest.getName();
+            if (!userData.containsKey(userName)) {
+                logoffResponse.setSuccess(false).setFailReason(userName + " is NOT a Registered User !");
+                he.sendResponseHeaders(400, 0);
+            } else if (!userData.get(userName).getOnlineStatus()){
+                logoffResponse.setSuccess(false).setFailReason(userName + " is already offline !");
                 he.sendResponseHeaders(400, 0);
             } else {
-                userData.put(regRequest.getName(), new User(regRequest.getName(), regRequest.getPassword(), regRequest.getEmail(), regRequest.getPhoneNumber(), false));
-                regResponse.setSuccess(true);
+                userData.get(userName).setOffline();
+                logoffResponse.setSuccess(true);
                 he.sendResponseHeaders(200, 0);
             }
 
             try (final OutputStream os = he.getResponseBody()){
-                regResponse.build().writeTo(os);
+                logoffResponse.build().writeTo(os);
             }
         }
     }
+
 }
