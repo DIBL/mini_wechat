@@ -1,6 +1,5 @@
 package com.Elessar.app.server;
 
-import com.Elessar.app.client.User;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -19,7 +18,7 @@ import java.util.Scanner;
 public class MyServer {
     private final String serverName;
     private final int port;
-    private Map<String, User> userData;
+    private final Map<String, User> userData;
 
     public MyServer(String serverName, int port) {
         this.serverName = serverName;

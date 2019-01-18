@@ -1,6 +1,5 @@
 package com.Elessar.app.server;
 
-import com.Elessar.app.client.User;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.Elessar.proto.Registration.RegistrationResponse;

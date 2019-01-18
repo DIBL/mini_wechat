@@ -1,4 +1,4 @@
-package com.Elessar.app.client;
+package com.Elessar.app.server;
 
 /**
  * Created by Hans on 1/16/19.
