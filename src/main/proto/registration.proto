@@ -4,10 +4,15 @@ package proto;
 
 option java_package = "com.Elessar.proto";
 
-message User {
+message RegistrationRequest {
   required string name = 1;
   required string password = 2;
   required string email = 3;
-  optional string number = 4;
+  optional string phoneNumber = 4;
+}
+
+message RegistrationResponse {
+  required bool success = 1;
+  optional string failReason = 2;
 }
 

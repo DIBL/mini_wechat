@@ -1,6 +1,5 @@
 package com.Elessar.app.server;
 
-//import org.apache.commons.io.IOUtils;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -9,6 +8,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
 
 /**
@@ -17,10 +18,12 @@ import java.util.Scanner;
 public class MyServer {
     private final String serverName;
     private final int port;
+    private final Map<String, User> userData;
 
     public MyServer(String serverName, int port) {
         this.serverName = serverName;
         this.port = port;
+        userData = new HashMap<String, User>();
     }
 
     public void run() {
@@ -28,11 +31,12 @@ public class MyServer {
             final HttpServer server = HttpServer.create(new InetSocketAddress(serverName, port), 0);
             server.createContext("/", new RootHandler());
             server.createContext("/echo", new EchoHandler());
+            server.createContext("/register", new RegisterHandler(userData));
             server.setExecutor(null);
             server.start();
             System.out.println("server started at " + port);
         } catch (IOException e) {
-            System.out.println("Cannot create server at port!");
+            System.out.println("Cannot create server at port because " + e.getMessage());
         }
     }
 
@@ -67,7 +71,7 @@ public class MyServer {
                 //final String request = IOUtils.toString(is, StandardCharsets.UTF_8);
                 final Scanner s = new Scanner(is).useDelimiter("\\A");
                 String request = s.hasNext() ? s.next() : "";
-                System.out.println(request);
+                System.out.println("Receive Echo Request: " + request);
             }
 
             final String response = "OK\n";
@@ -78,7 +82,3 @@ public class MyServer {
         }
     }
 }
-
-
-
-
