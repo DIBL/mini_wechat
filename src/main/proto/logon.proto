@@ -1,0 +1,15 @@
+syntax = "proto2";
+
+package proto;
+
+option java_package = "com.Elessar.proto";
+
+message LogonRequest {
+  required string name = 1;
+  required string password = 2;
+}
+
+message LogonResponse {
+  required bool success = 1;
+  optional string failReason = 2;
+}

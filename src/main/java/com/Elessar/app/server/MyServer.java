@@ -32,6 +32,8 @@ public class MyServer {
             server.createContext("/", new RootHandler());
             server.createContext("/echo", new EchoHandler());
             server.createContext("/register", new RegisterHandler(userData));
+            server.createContext("/logon", new LogOnHandler(userData));
+            server.createContext("/logoff", new LogOffHandler(userData));
             server.setExecutor(null);
             server.start();
             System.out.println("server started at " + port);
