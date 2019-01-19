@@ -41,6 +41,7 @@ public class LogOnHandler implements HttpHandler {
                 logonResponse.setSuccess(false).setFailReason("User Name " + userName + " is NOT Registered !");
                 he.sendResponseHeaders(400, 0);
             } else if (!userData.get(userName).getPassword().equals(password)){
+                //System.out.printf("user = %s, password1 = %s, password2 = %s\n", userName, userData.get(userName).getPassword(), password);
                 logonResponse.setSuccess(false).setFailReason("Incorrect Password !");
                 he.sendResponseHeaders(400, 0);
             } else if (userData.get(userName).getOnlineStatus()) {

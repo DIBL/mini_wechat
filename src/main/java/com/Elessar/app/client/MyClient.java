@@ -10,8 +10,12 @@ import com.Elessar.proto.Registration.RegistrationRequest;
 import com.google.api.client.http.*;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.http.protobuf.ProtoHttpContent;
+import com.google.api.client.util.ExponentialBackOff;
+
+import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
 import java.net.URL;
+import java.security.MessageDigest;
 
 /**
  * Created by Hans on 1/13/19.
@@ -24,24 +28,23 @@ public class MyClient {
     }
 
     public void logOn(String userName, String password) {
-        final LogonRequest.Builder logonReq= LogonRequest.newBuilder();
-        logonReq.setName(userName).setPassword(password);
         try {
-            final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
-            final HttpRequestFactory REQ_FACTORY = HTTP_TRANSPORT.createRequestFactory();
-            final URL regURL = new URL(hostURL.toString() + "/logon");
-            final GenericUrl endURL = new GenericUrl(regURL);
+            final LogonRequest.Builder logonReq= LogonRequest.newBuilder();
+            logonReq.setName(userName).setPassword(hash(password));
+
+            final HttpRequestFactory REQ_FACTORY = new NetHttpTransport().createRequestFactory();
+            final GenericUrl endURL = new GenericUrl(new URL(hostURL.toString() + "/logon"));
             final HttpContent content = new ProtoHttpContent(logonReq.build());
             final HttpRequest postRequest = REQ_FACTORY.buildPostRequest(endURL, content);
             final HttpResponse postResponse = postRequest.execute();
             final LogonResponse logonResponse = LogonResponse.parseFrom(postResponse.getContent());
 
             if (logonResponse.getSuccess()) {
-                System.out.println("User Log On Successfully !");
+                System.out.printf("User %s Log On Successfully !\n", userName);
             } else {
-                System.out.println("User Fail to Log On, Because: " + logonResponse.getFailReason());
+                System.out.printf("User $s Fail to Log On, Because: %s\n", userName, logonResponse.getFailReason());
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             System.out.println("Log On request failed: " + e.getMessage());
         }
     }
@@ -50,19 +53,17 @@ public class MyClient {
         final LogoffRequest.Builder logoffReq= LogoffRequest.newBuilder();
         logoffReq.setName(userName);
         try {
-            final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
-            final HttpRequestFactory REQ_FACTORY = HTTP_TRANSPORT.createRequestFactory();
-            final URL regURL = new URL(hostURL.toString() + "/logoff");
-            final GenericUrl endURL = new GenericUrl(regURL);
+            final HttpRequestFactory REQ_FACTORY = new NetHttpTransport().createRequestFactory();
+            final GenericUrl endURL = new GenericUrl(new URL(hostURL.toString() + "/logoff"));
             final HttpContent content = new ProtoHttpContent(logoffReq.build());
             final HttpRequest postRequest = REQ_FACTORY.buildPostRequest(endURL, content);
             final HttpResponse postResponse = postRequest.execute();
             final LogoffResponse logoffResponse = LogoffResponse.parseFrom(postResponse.getContent());
 
             if (logoffResponse.getSuccess()) {
-                System.out.println("User Log Off Successfully !");
+                System.out.printf("User %s Log Off Successfully !\n", userName);
             } else {
-                System.out.println("User Fail to Log Off, Because: " + logoffResponse.getFailReason());
+                System.out.printf("User %s Fail to Log Off, Because: %s\n", userName, logoffResponse.getFailReason());
             }
         } catch (IOException e) {
             System.out.println("Log Off request failed: " + e.getMessage());
@@ -70,13 +71,13 @@ public class MyClient {
     }
 
     public void register (String userName, String password, String email, String phoneNumber) {
-        final RegistrationRequest.Builder user = RegistrationRequest.newBuilder();
-        user.setName(userName).setPassword(password).setEmail(email);
-        if (phoneNumber != null) {
-            user.setPhoneNumber(phoneNumber);
-        }
-
         try {
+            final RegistrationRequest.Builder user = RegistrationRequest.newBuilder();
+            user.setName(userName).setPassword(hash(password)).setEmail(email);
+            if (phoneNumber != null) {
+                user.setPhoneNumber(phoneNumber);
+            }
+
             final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
             final HttpRequestFactory REQ_FACTORY = HTTP_TRANSPORT.createRequestFactory();
             final URL regURL = new URL(hostURL.toString() + "/register");
@@ -87,11 +88,11 @@ public class MyClient {
             final RegistrationResponse regResponse = RegistrationResponse.parseFrom(postResponse.getContent());
 
             if (regResponse.getSuccess()) {
-                System.out.println("User is Successfully Registered !");
+                System.out.printf("User %s is Successfully Registered !\n", userName);
             } else {
-                System.out.println("User Registration Failed Because: " + regResponse.getFailReason());
+                System.out.printf("User %s Registration Failed Because: %s\n", userName, regResponse.getFailReason());
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             System.out.println("Registration request failed: " + e.getMessage());
         }
     }
@@ -107,5 +108,11 @@ public class MyClient {
         } catch (IOException e) {
             System.out.println("Echo request failed: " + e.getMessage());
         }
+    }
+
+    private String hash(String password) throws Exception {
+        final MessageDigest md = MessageDigest.getInstance("MD5");
+        md.update(password.getBytes());
+        return DatatypeConverter.printHexBinary(md.digest());
     }
 }
