@@ -1,9 +1,5 @@
 package com.Elessar.app.server;
 
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -12,10 +8,19 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
+
 /**
  * Created by Hans on 1/10/19.
  */
 public class MyServer {
+    private static final Logger logger = LogManager.getLogger(MyServer.class);
+
     private final String serverName;
     private final int port;
     private final Map<String, User> userData;
@@ -36,9 +41,9 @@ public class MyServer {
             server.createContext("/logoff", new LogOffHandler(userData));
             server.setExecutor(null);
             server.start();
-            System.out.println("server started at " + port);
+            logger.info("Server started at port {}", port);
         } catch (IOException e) {
-            System.out.println("Cannot create server at port because " + e.getMessage());
+            logger.fatal("Caught exception during server startup: {}", e);
         }
     }
 
@@ -47,8 +52,8 @@ public class MyServer {
         @Override
         public void handle(HttpExchange he) throws IOException {
             final String response = "<h1>Server start success if you see this message</h1>" + "<h1>Port: " + 9000 + "</h1>";
-            he.sendResponseHeaders(200, response.length());     // 200 means the request was successfully received
-            try (OutputStream os = he.getResponseBody()){
+            he.sendResponseHeaders(200, response.length()); // 200 means the request was successfully received
+            try (OutputStream os = he.getResponseBody()) {
                 os.write(response.getBytes());
             }
         }
@@ -61,19 +66,21 @@ public class MyServer {
             final String requestType = he.getRequestMethod();
             // Only process GET request
             if (!"GET".equals(requestType)) {
+                logger.trace("Handle non-GET echo request {}", he);
                 final String response = "NOT IMPLEMENTED\n";
-                he.sendResponseHeaders(501, response.length());  // 501 tells the caller that this method is not supported by the server
+                // 501 tells the caller that this method is not supported by the server
+                he.sendResponseHeaders(501, response.length());
                 try (OutputStream os = he.getResponseBody()) {
                     os.write(response.getBytes());
                 }
-                return ;
+                return;
             }
 
             try (InputStream is = he.getRequestBody()) {
-                //final String request = IOUtils.toString(is, StandardCharsets.UTF_8);
+                // final String request = IOUtils.toString(is, StandardCharsets.UTF_8);
                 final Scanner s = new Scanner(is).useDelimiter("\\A");
                 String request = s.hasNext() ? s.next() : "";
-                System.out.println("Receive Echo Request: " + request);
+                logger.info("Handle echo request: {}", request);
             }
 
             final String response = "OK\n";
