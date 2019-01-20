@@ -7,8 +7,9 @@ import com.Elessar.proto.Logon.LogonRequest;
 import com.Elessar.proto.Logon.LogonResponse;
 import com.Elessar.proto.Registration.RegistrationResponse;
 import com.Elessar.proto.Registration.RegistrationRequest;
-import com.google.api.client.http.*;        
+import com.google.api.client.http.*;
 import com.google.api.client.http.javanet.NetHttpTransport;
+import org.apache.http.protocol.HTTP;
 
 import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
@@ -20,9 +21,11 @@ import java.security.MessageDigest;
  */
 public class MyClient {
     private final URL hostURL;
+    private final HttpClient httpClient;
 
     public MyClient(URL hostURL) {
         this.hostURL = hostURL;
+        this.httpClient = new HttpClient(new NetHttpTransport().createRequestFactory());
     }
 
     public void logOn(String userName, String password) {
@@ -30,7 +33,7 @@ public class MyClient {
             final LogonRequest.Builder logonReq= LogonRequest.newBuilder();
             logonReq.setName(userName).setPassword(hash(password));
 
-            final HttpResponse response = HttpClient.execute(new URL(hostURL.toString() + "/logon"), logonReq.build());
+            final HttpResponse response = httpClient.post(new URL(hostURL.toString() + "/logon"), logonReq.build());
             final LogonResponse logonResponse = LogonResponse.parseFrom(response.getContent());
 
             if (logonResponse.getSuccess()) {
@@ -48,7 +51,7 @@ public class MyClient {
             final LogoffRequest.Builder logoffRequest= LogoffRequest.newBuilder();
             logoffRequest.setName(userName);
 
-            final HttpResponse response = HttpClient.execute(new URL(hostURL.toString() + "/logoff"), logoffRequest.build());
+            final HttpResponse response = httpClient.post(new URL(hostURL.toString() + "/logoff"), logoffRequest.build());
             final LogoffResponse logoffResponse = LogoffResponse.parseFrom(response.getContent());
 
             if (logoffResponse.getSuccess()) {
@@ -69,7 +72,7 @@ public class MyClient {
                 registerRequest.setPhoneNumber(phoneNumber);
             }
 
-            final HttpResponse response = HttpClient.execute(new URL(hostURL.toString() + "/register"), registerRequest.build());
+            final HttpResponse response = httpClient.post(new URL(hostURL.toString() + "/register"), registerRequest.build());
             final RegistrationResponse registerResponse = RegistrationResponse.parseFrom(response.getContent());
 
             if (registerResponse.getSuccess()) {
@@ -84,13 +87,8 @@ public class MyClient {
 
     public void echo () {
         try {
-            final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
-            final HttpRequestFactory REQ_FACTORY = HTTP_TRANSPORT.createRequestFactory();
-            final URL echoURL = new URL(hostURL.toString() + "/echo");
-            final GenericUrl endURL = new GenericUrl(echoURL);
-            final HttpRequest getRequest = REQ_FACTORY.buildGetRequest(endURL);
-            getRequest.execute();
-        } catch (IOException e) {
+            httpClient.get(new URL(hostURL.toString() + "/echo"));
+        } catch (Exception e) {
             System.out.println("Echo request failed: " + e.getMessage());
         }
     }
