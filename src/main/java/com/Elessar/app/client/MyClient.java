@@ -9,10 +9,8 @@ import com.Elessar.proto.Registration.RegistrationResponse;
 import com.Elessar.proto.Registration.RegistrationRequest;
 import com.google.api.client.http.*;
 import com.google.api.client.http.javanet.NetHttpTransport;
-import org.apache.http.protocol.HTTP;
 
 import javax.xml.bind.DatatypeConverter;
-import java.io.IOException;
 import java.net.URL;
 import java.security.MessageDigest;
 

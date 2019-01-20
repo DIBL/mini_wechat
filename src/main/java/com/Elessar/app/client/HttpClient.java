@@ -2,7 +2,6 @@ package com.Elessar.app.client;
 
 import com.google.api.client.http.*;
 import com.google.api.client.http.protobuf.ProtoHttpContent;
-import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.MessageLite;
 
 import java.net.URL;
