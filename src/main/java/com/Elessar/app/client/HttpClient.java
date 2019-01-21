@@ -20,13 +20,13 @@ public class HttpClient {
         final GenericUrl endURL = new GenericUrl(url);
         final HttpContent content = new ProtoHttpContent(request);
         final HttpRequest postRequest = httpRequestFactory.buildPostRequest(endURL, content);
-        return postRequest.execute();
+        return postRequest.execute(); //throw exception for HTTP error code (non-2XX)
     }
 
     public HttpResponse get(URL url) throws Exception {
         final GenericUrl endURL = new GenericUrl(url);
         final HttpRequest getRequest = httpRequestFactory.buildGetRequest(endURL);
-        return getRequest.execute();
+        return getRequest.execute(); //throw exception for HTTP error code (non-2XX)
     }
 
 }

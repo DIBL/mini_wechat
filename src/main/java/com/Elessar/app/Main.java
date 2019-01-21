@@ -5,6 +5,9 @@ import com.Elessar.app.server.MyServer;
 import com.example.tutorial.Addressbook.Person;
 
 import java.io.*;
+import java.util.logging.Logger;
+import java.util.logging.Level;
+
 
 
 /**
@@ -13,6 +16,8 @@ import java.io.*;
 
 public class Main {
     public static void main(String[] args){
+        Logger mongoLogger = Logger.getLogger( "org.mongodb.driver" );
+        mongoLogger.setLevel(Level.SEVERE); // e.g. or Log.WARNING, etc.
         final MyServer server = new MyServer("localhost", 9000);
         server.run();
         //testProtoBuf();

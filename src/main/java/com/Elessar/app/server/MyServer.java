@@ -4,16 +4,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Scanner;
 
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+import org.bson.Document;
 
 /**
  * Created by Hans on 1/10/19.
@@ -23,12 +26,15 @@ public class MyServer {
 
     private final String serverName;
     private final int port;
-    private final Map<String, User> userData;
+    private final MongoDatabase db;
+    private final MongoCollection<Document> user;
 
     public MyServer(String serverName, int port) {
         this.serverName = serverName;
         this.port = port;
-        userData = new HashMap<String, User>();
+        MongoClient mongoClient = MongoClients.create("mongodb://localhost:27017");
+        db = mongoClient.getDatabase("myDB");
+        user = db.getCollection("user");
     }
 
     public void run() {
@@ -36,9 +42,9 @@ public class MyServer {
             final HttpServer server = HttpServer.create(new InetSocketAddress(serverName, port), 0);
             server.createContext("/", new RootHandler());
             server.createContext("/echo", new EchoHandler());
-            server.createContext("/register", new RegisterHandler(userData));
-            server.createContext("/logon", new LogOnHandler(userData));
-            server.createContext("/logoff", new LogOffHandler(userData));
+            server.createContext("/register", new RegisterHandler(user));
+            server.createContext("/logon", new LogOnHandler(user));
+            server.createContext("/logoff", new LogOffHandler(user));
             server.setExecutor(null);
             server.start();
             logger.info("Server started at port {}", port);

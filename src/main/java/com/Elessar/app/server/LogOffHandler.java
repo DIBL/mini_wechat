@@ -2,21 +2,34 @@ package com.Elessar.app.server;
 
 import com.Elessar.proto.Logoff.LogoffResponse;
 import com.Elessar.proto.Logoff.LogoffRequest;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.bson.Document;
+import org.bson.conversions.Bson;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Map;
+
+import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Projections.excludeId;
+import static com.mongodb.client.model.Projections.fields;
+import static com.mongodb.client.model.Projections.include;
+import static com.mongodb.client.model.Updates.set;
 
 /**
  * Created by Hans on 1/16/19.
  */
 public class LogOffHandler implements HttpHandler {
-    private final Map<String, User> userData;
+    private static final Logger logger = LogManager.getLogger(LogOffHandler.class);
+    private final MongoCollection<Document> user;
 
-    public LogOffHandler(Map<String, User> userData) {
-        this.userData = userData;
+    public LogOffHandler(MongoCollection<Document> user) {
+        this.user = user;
     }
 
     @Override
@@ -24,6 +37,7 @@ public class LogOffHandler implements HttpHandler {
         final String requestType = he.getRequestMethod();
         // Only handle POST request
         if (!"POST".equals(requestType)) {
+            logger.debug("Received non-POST request for log off");
             final String response = "NOT IMPLEMENTED\n";
             he.sendResponseHeaders(501, response.length());  // 501 tells the caller that this method is not supported by the server
             try (OutputStream os = he.getResponseBody()) {
@@ -36,16 +50,22 @@ public class LogOffHandler implements HttpHandler {
             final LogoffRequest logoffRequest = LogoffRequest.parseFrom(is);
             final LogoffResponse.Builder logoffResponse = LogoffResponse.newBuilder();
             final String userName = logoffRequest.getName();
-            if (!userData.containsKey(userName)) {
-                logoffResponse.setSuccess(false).setFailReason(userName + " is NOT a Registered User !");
-                he.sendResponseHeaders(400, 0);
-            } else if (!userData.get(userName).getOnlineStatus()){
-                logoffResponse.setSuccess(false).setFailReason(userName + " is already log off !");
-                he.sendResponseHeaders(400, 0);
-            } else {
-                userData.get(userName).setOffline();
-                logoffResponse.setSuccess(true);
-                he.sendResponseHeaders(200, 0);
+            Bson query = eq("name", userName);
+            try (MongoCursor<Document> cursor = user.find(query).projection(fields(include("online"), excludeId())).iterator()) {
+                if (!cursor.hasNext()) {
+                    logger.info("User {} is NOT registered !", userName);
+                    logoffResponse.setSuccess(false).setFailReason("User " + userName + " is NOT a registered !");
+                    he.sendResponseHeaders(400, 0);
+                } else if (!cursor.next().getBoolean("online")) {
+                    logger.info("User {} has already log off !", userName);
+                    logoffResponse.setSuccess(false).setFailReason("User " + userName + " has already log off !");
+                    he.sendResponseHeaders(400, 0);
+                } else {
+                    logger.info("User {} successfully log off !", userName);
+                    user.updateOne(query, set("online", false));
+                    logoffResponse.setSuccess(true);
+                    he.sendResponseHeaders(200, 0);
+                }
             }
 
             try (final OutputStream os = he.getResponseBody()){
