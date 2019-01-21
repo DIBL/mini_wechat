@@ -6,6 +6,8 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.util.Scanner;
 
+import com.Elessar.database.MongoDB;
+import com.Elessar.database.MyDatabase;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
@@ -26,15 +28,13 @@ public class MyServer {
 
     private final String serverName;
     private final int port;
-    private final MongoDatabase db;
-    private final MongoCollection<Document> user;
+    private final MyDatabase users;
 
     public MyServer(String serverName, int port) {
         this.serverName = serverName;
         this.port = port;
         MongoClient mongoClient = MongoClients.create("mongodb://localhost:27017");
-        db = mongoClient.getDatabase("myDB");
-        user = db.getCollection("user");
+        users = new MongoDB(mongoClient.getDatabase("myDB").getCollection("users"));
     }
 
     public void run() {
@@ -42,9 +42,9 @@ public class MyServer {
             final HttpServer server = HttpServer.create(new InetSocketAddress(serverName, port), 0);
             server.createContext("/", new RootHandler());
             server.createContext("/echo", new EchoHandler());
-            server.createContext("/register", new RegisterHandler(user));
-            server.createContext("/logon", new LogOnHandler(user));
-            server.createContext("/logoff", new LogOffHandler(user));
+            server.createContext("/register", new RegisterHandler(users));
+            server.createContext("/logon", new LogOnHandler(users));
+            server.createContext("/logoff", new LogOffHandler(users));
             server.setExecutor(null);
             server.start();
             logger.info("Server started at port {}", port);

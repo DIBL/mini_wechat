@@ -24,6 +24,7 @@ public class ClientMain {
 //            String email = stdin.readLine();
 //            System.out.println("Please enter your phone number:");
 //            String phoneNumber = stdin.readLine();
+
             client.register("abc", "123", "abc@126.com", "365-2873343");
             client.register("abc", "123", "abc@126.com", "365-2873343");
             System.out.println();

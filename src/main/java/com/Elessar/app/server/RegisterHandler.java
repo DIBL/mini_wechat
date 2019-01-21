@@ -1,29 +1,29 @@
 package com.Elessar.app.server;
 
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoCursor;
+import com.Elessar.database.MyDatabase;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.Elessar.proto.Registration.RegistrationResponse;
 import com.Elessar.proto.Registration.RegistrationRequest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bson.Document;
-import static com.mongodb.client.model.Filters.eq;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * Created by Hans on 1/15/19.
  */
 public class RegisterHandler implements HttpHandler {
     private static final Logger logger = LogManager.getLogger(RegisterHandler.class);
-    private final MongoCollection<Document> user;
+    private final MyDatabase users;
 
-    public RegisterHandler(MongoCollection<Document> user) {
-        this.user = user;
+    public RegisterHandler(MyDatabase users) {
+        this.users = users;
     }
 
     @Override
@@ -44,22 +44,24 @@ public class RegisterHandler implements HttpHandler {
             final RegistrationRequest regRequest = RegistrationRequest.parseFrom(is);
             final RegistrationResponse.Builder regResponse = RegistrationResponse.newBuilder();
             final String userName = regRequest.getName();
-            try (MongoCursor<Document> cursor = user.find(eq("name", userName)).iterator()) {
-                if (cursor.hasNext()) {
-                    logger.info("User name {} already exists !", userName);
-                    regResponse.setSuccess(false).setFailReason("User Name " + userName + " Exists !");
-                    he.sendResponseHeaders(400, 0);
+            final Map<String, String> filters = new HashMap<>();
+            filters.put("name", regRequest.getName());
+            Iterator cursor = users.find(filters).iterator();    // how to handle possible os leak?
+            if (cursor.hasNext()) {
+                logger.info("User name {} already exists !", userName);
+                regResponse.setSuccess(false).setFailReason("User Name " + userName + " Exists !");
+                he.sendResponseHeaders(400, 0);
 
-                } else {
-                    user.insertOne(new Document("name", userName)
-                            .append("password", regRequest.getPassword())
-                            .append("email", regRequest.getEmail())
-                            .append("phone", regRequest.getPhoneNumber())
-                            .append("online", false));
-                    logger.info("User {} successfully registered !", userName);
-                    regResponse.setSuccess(true);
-                    he.sendResponseHeaders(200, 0);
-                }
+            } else {
+                final Map<String, String> document = new HashMap<>();
+                document.put("name", regRequest.getName());
+                document.put("password", regRequest.getPassword());
+                document.put("phone", regRequest.getPhoneNumber());
+                document.put("online", "false");
+                users.insert(document);
+                logger.info("User {} successfully registered !", userName);
+                regResponse.setSuccess(true);
+                he.sendResponseHeaders(200, 0);
             }
 
             try (final OutputStream os = he.getResponseBody()){

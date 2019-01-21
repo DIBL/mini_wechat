@@ -43,7 +43,7 @@ public class MyClient {
                 logger.info("User {} fail to log on, because {}", userName, logonResponse.getFailReason());
             }
         } catch (Exception e) {
-            logger.warn("Caught exception during user log on: {}", e.getMessage());
+            logger.info("Caught exception during user log on: {}", e.getMessage());
         }
     }
 
@@ -61,7 +61,7 @@ public class MyClient {
                 logger.info("User {} fail to log off, because {}", userName, logoffResponse.getFailReason());
             }
         } catch (Exception e) {
-            logger.warn("Caught exception during user log off: {}", e.getMessage());
+            logger.info("Caught exception during user log off: {}", e.getMessage());
         }
     }
 
@@ -82,7 +82,7 @@ public class MyClient {
                 logger.info("User {} fail to register, because {}", userName, registerResponse.getFailReason());
             }
         } catch (Exception e) {
-            logger.warn("Caught exception during user registration: {}", e.getMessage());
+            logger.info("Caught exception during user registration: {}", e.getMessage());
         }
     }
 
@@ -90,7 +90,7 @@ public class MyClient {
         try {
             httpClient.get(new URL(hostURL.toString() + "/echo"));
         } catch (Exception e) {
-            logger.warn("Caught exception during echo request: {}", e.getMessage());
+            logger.debug("Caught exception during echo request: {}", e.getMessage());
         }
     }
 
