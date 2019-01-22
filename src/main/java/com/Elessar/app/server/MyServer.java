@@ -28,13 +28,12 @@ public class MyServer {
 
     private final String serverName;
     private final int port;
-    private final MyDatabase users;
+    private final MyDatabase db;
 
     public MyServer(String serverName, int port) {
         this.serverName = serverName;
         this.port = port;
-        MongoClient mongoClient = MongoClients.create("mongodb://localhost:27017");
-        users = new MongoDB(mongoClient.getDatabase("myDB").getCollection("users"));
+        db = new MongoDB(MongoClients.create("mongodb://localhost:27017").getDatabase("myDB"));
     }
 
     public void run() {
@@ -42,9 +41,9 @@ public class MyServer {
             final HttpServer server = HttpServer.create(new InetSocketAddress(serverName, port), 0);
             server.createContext("/", new RootHandler());
             server.createContext("/echo", new EchoHandler());
-            server.createContext("/register", new RegisterHandler(users));
-            server.createContext("/logon", new LogOnHandler(users));
-            server.createContext("/logoff", new LogOffHandler(users));
+            server.createContext("/register", new RegisterHandler(db));
+            server.createContext("/logon", new LogOnHandler(db));
+            server.createContext("/logoff", new LogOffHandler(db));
             server.setExecutor(null);
             server.start();
             logger.info("Server started at port {}", port);
@@ -83,7 +82,6 @@ public class MyServer {
             }
 
             try (InputStream is = he.getRequestBody()) {
-                // final String request = IOUtils.toString(is, StandardCharsets.UTF_8);
                 final Scanner s = new Scanner(is).useDelimiter("\\A");
                 String request = s.hasNext() ? s.next() : "";
                 logger.info("Handle echo request: {}", request);

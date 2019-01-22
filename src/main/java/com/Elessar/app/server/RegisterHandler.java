@@ -13,6 +13,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -20,10 +21,10 @@ import java.util.Map;
  */
 public class RegisterHandler implements HttpHandler {
     private static final Logger logger = LogManager.getLogger(RegisterHandler.class);
-    private final MyDatabase users;
+    private final MyDatabase db;
 
-    public RegisterHandler(MyDatabase users) {
-        this.users = users;
+    public RegisterHandler(MyDatabase db) {
+        this.db = db;
     }
 
     @Override
@@ -44,21 +45,17 @@ public class RegisterHandler implements HttpHandler {
             final RegistrationRequest regRequest = RegistrationRequest.parseFrom(is);
             final RegistrationResponse.Builder regResponse = RegistrationResponse.newBuilder();
             final String userName = regRequest.getName();
-            final Map<String, String> filters = new HashMap<>();
-            filters.put("name", regRequest.getName());
-            Iterator cursor = users.find(filters).iterator();    // how to handle possible os leak?
-            if (cursor.hasNext()) {
+            List<User> userList = db.findUsers(new User(userName, null, null, null, null));    // how to handle possible os leak?
+            if (!userList.isEmpty()) {
                 logger.info("User name {} already exists !", userName);
                 regResponse.setSuccess(false).setFailReason("User Name " + userName + " Exists !");
                 he.sendResponseHeaders(400, 0);
 
             } else {
-                final Map<String, String> document = new HashMap<>();
-                document.put("name", regRequest.getName());
-                document.put("password", regRequest.getPassword());
-                document.put("phone", regRequest.getPhoneNumber());
-                document.put("online", "false");
-                users.insert(document);
+                db.insert(new User(regRequest.getName(),
+                                   regRequest.getPassword(),
+                                   regRequest.getEmail(),
+                                   regRequest.getPhoneNumber(), "false"));
                 logger.info("User {} successfully registered !", userName);
                 regResponse.setSuccess(true);
                 he.sendResponseHeaders(200, 0);

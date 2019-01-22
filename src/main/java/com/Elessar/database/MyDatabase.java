@@ -1,19 +1,16 @@
 package com.Elessar.database;
 
-import org.bson.Document;
-
-import java.util.Map;
+import com.Elessar.app.server.User;
+import java.util.List;
 
 /**
  * Created by Hans on 1/20/19.
  */
 public interface MyDatabase {
-    void insert(Map<String, String> document);
+    void insert(User user);
 
-    Iterable<Document> find(Map<String, String> filters);
+    User update(User filter, User user);
 
-    void updateField(Map<String, String> filters, String fieldToUpdate, String value);
-
-    boolean isFieldEqual(Document doc, String field, String valueToComp);
+    List<User> findUsers(User filter);
 
 }

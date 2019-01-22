@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 
@@ -23,10 +24,10 @@ import java.util.Map;
  */
 public class LogOffHandler implements HttpHandler {
     private static final Logger logger = LogManager.getLogger(LogOffHandler.class);
-    private final MyDatabase users;
+    private final MyDatabase db;
 
-    public LogOffHandler(MyDatabase users) {
-        this.users = users;
+    public LogOffHandler(MyDatabase db) {
+        this.db = db;
     }
 
     @Override
@@ -47,20 +48,18 @@ public class LogOffHandler implements HttpHandler {
             final LogoffRequest logoffRequest = LogoffRequest.parseFrom(is);
             final LogoffResponse.Builder logoffResponse = LogoffResponse.newBuilder();
             final String userName = logoffRequest.getName();
-            Map<String, String> filters = new HashMap<>();
-            filters.put("name", userName);
-            Iterator<Document> cursor = users.find(filters).iterator();
-            if (!cursor.hasNext()) {
+            User prevUser = db.update(new User(userName, null, null, null, null),
+                                      new User(null, null, null, null, "false"));
+            if (prevUser == null) {
                 logger.info("User {} is NOT registered !", userName);
                 logoffResponse.setSuccess(false).setFailReason("User " + userName + " is NOT a registered !");
                 he.sendResponseHeaders(400, 0);
-            } else if (users.isFieldEqual(cursor.next(), "online", "false")) {
+            } else if (prevUser.getOnline().equals("false")) {
                 logger.info("User {} has already log off !", userName);
                 logoffResponse.setSuccess(false).setFailReason("User " + userName + " has already log off !");
                 he.sendResponseHeaders(400, 0);
             } else {
                 logger.info("User {} successfully log off !", userName);
-                users.updateField(filters, "online", "false");
                 logoffResponse.setSuccess(true);
                 he.sendResponseHeaders(200, 0);
             }
