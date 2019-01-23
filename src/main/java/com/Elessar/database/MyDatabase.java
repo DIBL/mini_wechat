@@ -7,9 +7,11 @@ import java.util.List;
  * Created by Hans on 1/20/19.
  */
 public interface MyDatabase {
+
     void insert(User user);
 
-    User update(User filter, User user);
+    // Return User info before update
+    User update(User user);
 
     List<User> findUsers(User filter);
 

@@ -6,7 +6,6 @@ import com.mongodb.client.MongoDatabase;
 import org.bson.BsonDocument;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-
 import java.util.ArrayList;
 import java.util.List;
 import static com.mongodb.client.model.Filters.and;
@@ -27,8 +26,10 @@ public class MongoDB implements MyDatabase{
         doc.append("name", user.getName());
         doc.append("password", user.getPassword());
         doc.append("email", user.getEmail());
-        doc.append("phone", user.getPhoneNumber());
         doc.append("online", user.getOnline());
+        if (user.getPhoneNumber().length() > 0) {
+            doc.append("phone", user.getPhoneNumber());
+        }
         db.getCollection("users").insertOne(doc);
     }
 
@@ -45,19 +46,19 @@ public class MongoDB implements MyDatabase{
     }
 
     @Override
-    public User update(User filter, User user) {
-        List<User> list = findUsers(filter);
-        User prevUser = null;
-        if (!list.isEmpty()) {
-            prevUser = list.get(0);
+    public User update(User user) {
+        Bson filter = eq("name", user.getName());
+        if (user.getPassword() != null) {
+            filter = and(filter, eq("password", user.getPassword()));
         }
-        db.getCollection("users").updateOne(userToBson(filter), new Document("$set", userToDoc(user)));
-        return prevUser;
+        Document prevUserDoc = db.getCollection("users").findOneAndUpdate(filter, new Document("$set", userToDoc(user)));
+        return docToUser(prevUserDoc);
     }
 
-
-
     private User docToUser(Document doc) {
+        if (doc == null) {
+            return null;
+        }
         return new User(doc.getString("name"),
                  doc.getString("password"),
                  doc.getString("email"),

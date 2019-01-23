@@ -42,8 +42,7 @@ public class LogOnHandler implements HttpHandler {
             String userName = logonRequest.getName();
             String password = logonRequest.getPassword();
 
-            User prevUser = db.update(new User(userName, password, null, null, null),
-                                      new User(null, null, null, null, "true"));
+            User prevUser = db.update(new User(userName, password, null, null, "true"));
             if (prevUser == null) {
                 logger.info("User {} and password combination does NOT exist !", userName);
                 logonResponse.setSuccess(false).setFailReason("User " + userName + " password combination does NOT exist !");

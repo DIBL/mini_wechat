@@ -11,7 +11,6 @@ import com.google.api.client.http.*;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import javax.xml.bind.DatatypeConverter;
 import java.net.URL;
 import java.security.MessageDigest;

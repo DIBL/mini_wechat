@@ -1,9 +1,10 @@
 package com.Elessar.app;
 
 import com.Elessar.app.server.MyServer;
-
+import com.Elessar.database.MongoDB;
+import com.Elessar.database.MyDatabase;
 import com.example.tutorial.Addressbook.Person;
-
+import com.mongodb.client.MongoClients;
 import java.io.*;
 import java.util.logging.Logger;
 import java.util.logging.Level;
@@ -18,7 +19,8 @@ public class Main {
     public static void main(String[] args){
         Logger mongoLogger = Logger.getLogger( "org.mongodb.driver" );
         mongoLogger.setLevel(Level.SEVERE); // e.g. or Log.WARNING, etc.
-        final MyServer server = new MyServer("localhost", 9000);
+        MyDatabase db = new MongoDB(MongoClients.create("mongodb://localhost:27017").getDatabase("myDB"));
+        final MyServer server = new MyServer("localhost", 9000, db);
         server.run();
         //testProtoBuf();
     }

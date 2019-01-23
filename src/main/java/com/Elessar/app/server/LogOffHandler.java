@@ -7,16 +7,9 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bson.Document;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
 
 
 /**
@@ -48,8 +41,7 @@ public class LogOffHandler implements HttpHandler {
             final LogoffRequest logoffRequest = LogoffRequest.parseFrom(is);
             final LogoffResponse.Builder logoffResponse = LogoffResponse.newBuilder();
             final String userName = logoffRequest.getName();
-            User prevUser = db.update(new User(userName, null, null, null, null),
-                                      new User(null, null, null, null, "false"));
+            User prevUser = db.update(new User(userName, null, null, null, "false"));
             if (prevUser == null) {
                 logger.info("User {} is NOT registered !", userName);
                 logoffResponse.setSuccess(false).setFailReason("User " + userName + " is NOT a registered !");

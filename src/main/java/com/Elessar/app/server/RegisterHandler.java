@@ -11,10 +11,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+
 
 /**
  * Created by Hans on 1/15/19.
@@ -45,20 +42,18 @@ public class RegisterHandler implements HttpHandler {
             final RegistrationRequest regRequest = RegistrationRequest.parseFrom(is);
             final RegistrationResponse.Builder regResponse = RegistrationResponse.newBuilder();
             final String userName = regRequest.getName();
-            List<User> userList = db.findUsers(new User(userName, null, null, null, null));    // how to handle possible os leak?
-            if (!userList.isEmpty()) {
-                logger.info("User name {} already exists !", userName);
-                regResponse.setSuccess(false).setFailReason("User Name " + userName + " Exists !");
-                he.sendResponseHeaders(400, 0);
-
-            } else {
+            try {
                 db.insert(new User(regRequest.getName(),
-                                   regRequest.getPassword(),
-                                   regRequest.getEmail(),
-                                   regRequest.getPhoneNumber(), "false"));
+                        regRequest.getPassword(),
+                        regRequest.getEmail(),
+                        regRequest.getPhoneNumber(), "false"));
                 logger.info("User {} successfully registered !", userName);
                 regResponse.setSuccess(true);
                 he.sendResponseHeaders(200, 0);
+            } catch (Exception e) {
+                logger.error("User name {} already exists, caught exception: {}", userName, e.getMessage());
+                regResponse.setSuccess(false).setFailReason("User Name " + userName + " Exists !");
+                he.sendResponseHeaders(400, 0);
             }
 
             try (final OutputStream os = he.getResponseBody()){

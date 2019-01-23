@@ -1,9 +1,7 @@
 package com.Elessar.app;
 
 import com.Elessar.app.client.MyClient;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.URL;
 
 /**
@@ -27,15 +25,18 @@ public class ClientMain {
 
             client.register("abc", "123", "abc@126.com", "365-2873343");
             client.register("abc", "123", "abc@126.com", "365-2873343");
+            client.register("cde", "789", "cde@163.com", null);
             System.out.println();
             client.logOn("abc", "234");
             client.logOn("ebf", "234");
             client.logOn("abc", "123");
             client.logOn("abc", "123");
+            client.logOn("cde", "789");
             System.out.println();
             client.logOff("ebf");
             client.logOff("abc");
             client.logOff("abc");
+            client.logOff("cde");
         } catch (IOException e) {
             System.out.println("Client failed because " + e.getMessage());
         }
