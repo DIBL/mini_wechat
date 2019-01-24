@@ -4,10 +4,12 @@ package com.Elessar.app.server;
  * Created by Hans on 1/16/19.
  */
 public class User {
-    private final String userName, passoword, email, phoneNumber, online;
-    public User(String userName, String passoword, String email, String phoneNumber, String online) {
+    public static final String NAME = "name", PASSWORD = "password", PHONE = "phone", EMAIL = "email", ONLINE = "online";
+    private final String userName, password, email, phoneNumber;
+    private final boolean online;
+    public User(String userName, String password, String email, String phoneNumber, boolean online) {
         this.userName = userName;
-        this.passoword = passoword;
+        this.password = password;
         this.email = email;
         this.phoneNumber = phoneNumber;
         this.online = online;
@@ -18,7 +20,7 @@ public class User {
     }
 
     public String getPassword() {
-        return passoword;
+        return password;
     }
 
     public String getEmail() {
@@ -29,7 +31,7 @@ public class User {
         return phoneNumber;
     }
 
-    public String getOnline() {
+    public boolean getOnline() {
         return online;
     }
 }

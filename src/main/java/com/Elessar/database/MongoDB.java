@@ -23,20 +23,21 @@ public class MongoDB implements MyDatabase{
     @Override
     public void insert(User user) {
         final Document doc = new Document();
-        doc.append("name", user.getName());
-        doc.append("password", user.getPassword());
-        doc.append("email", user.getEmail());
-        doc.append("online", user.getOnline());
-        if (user.getPhoneNumber().length() > 0) {
-            doc.append("phone", user.getPhoneNumber());
+        doc.append(User.NAME, user.getName());
+        doc.append(User.PASSWORD, user.getPassword());
+        doc.append(User.EMAIL, user.getEmail());
+        doc.append(User.ONLINE, user.getOnline());
+        String phone = user.getPhoneNumber();
+        if (phone != null && phone.length() > 0) {
+            doc.append(User.PHONE, phone);
         }
-        db.getCollection("users").insertOne(doc);
+        db.getCollection(MyDatabase.USERS).insertOne(doc);
     }
 
     @Override
     public List<User> findUsers(User filter) {
-        List<User> findResult = new ArrayList<>();
-        try (MongoCursor<Document> cursor = db.getCollection("users").find(userToBson(filter)).iterator()) {
+        final List<User> findResult = new ArrayList<>();
+        try (MongoCursor<Document> cursor = db.getCollection(MyDatabase.USERS).find(userToBson(filter)).iterator()) {
             while (cursor.hasNext()) {
                 findResult.add(docToUser(cursor.next()));
             }
@@ -47,11 +48,11 @@ public class MongoDB implements MyDatabase{
 
     @Override
     public User update(User user) {
-        Bson filter = eq("name", user.getName());
+        Bson filter = eq(User.NAME, user.getName());
         if (user.getPassword() != null) {
-            filter = and(filter, eq("password", user.getPassword()));
+            filter = and(filter, eq(User.PASSWORD, user.getPassword()));
         }
-        Document prevUserDoc = db.getCollection("users").findOneAndUpdate(filter, new Document("$set", userToDoc(user)));
+        final Document prevUserDoc = db.getCollection(MyDatabase.USERS).findOneAndUpdate(filter, new Document("$set", userToDoc(user)));
         return docToUser(prevUserDoc);
     }
 
@@ -59,11 +60,11 @@ public class MongoDB implements MyDatabase{
         if (doc == null) {
             return null;
         }
-        return new User(doc.getString("name"),
-                 doc.getString("password"),
-                 doc.getString("email"),
-                 doc.getString("phone"),
-                 doc.getString("online"));
+        return new User(doc.getString(User.NAME),
+                 doc.getString(User.PASSWORD),
+                 doc.getString(User.EMAIL),
+                 doc.getString(User.PHONE),
+                 doc.getBoolean(User.ONLINE));
     }
 
 
@@ -71,40 +72,38 @@ public class MongoDB implements MyDatabase{
     private Bson userToBson(User filter) {
         Bson bson = new BsonDocument();
         if (filter.getName() != null) {
-            bson = and(bson, eq("name", filter.getName()));
+            bson = and(bson, eq(User.NAME, filter.getName()));
         }
         if (filter.getPassword() != null) {
-            bson = and(bson, eq("password", filter.getPassword()));
+            bson = and(bson, eq(User.PASSWORD, filter.getPassword()));
         }
         if (filter.getEmail() != null) {
-            bson = and(bson, eq("email", filter.getEmail()));
+            bson = and(bson, eq(User.EMAIL, filter.getEmail()));
         }
         if (filter.getPhoneNumber() != null) {
-            bson = and(bson, eq("phone", filter.getPhoneNumber()));
+            bson = and(bson, eq(User.PHONE, filter.getPhoneNumber()));
         }
-        if (filter.getOnline() != null ) {
-            bson = and(bson, eq("online", filter.getOnline()));
-        }
+        bson = and(bson, eq(User.ONLINE, filter.getOnline()));
+
         return bson;
     }
 
     private Document userToDoc(User user) {
-        Document doc = new Document();
+        final Document doc = new Document();
         if (user.getName() != null) {
-            doc.append("name", user.getName());
+            doc.append(User.NAME, user.getName());
         }
         if (user.getPassword() != null) {
-            doc.append("password", user.getPassword());
+            doc.append(User.PASSWORD, user.getPassword());
         }
         if (user.getEmail() != null) {
-            doc.append("email", user.getEmail());
+            doc.append(User.EMAIL, user.getEmail());
         }
         if (user.getPhoneNumber() != null) {
-            doc.append("phone", user.getPhoneNumber());
+            doc.append(User.PHONE, user.getPhoneNumber());
         }
-        if (user.getOnline() != null) {
-            doc.append("online", user.getOnline());
-        }
+        doc.append(User.ONLINE, user.getOnline());
+
         return doc;
     }
 

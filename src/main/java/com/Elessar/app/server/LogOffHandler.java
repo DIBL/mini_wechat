@@ -41,12 +41,13 @@ public class LogOffHandler implements HttpHandler {
             final LogoffRequest logoffRequest = LogoffRequest.parseFrom(is);
             final LogoffResponse.Builder logoffResponse = LogoffResponse.newBuilder();
             final String userName = logoffRequest.getName();
-            User prevUser = db.update(new User(userName, null, null, null, "false"));
+
+            final User prevUser = db.update(new User(userName, null, null, null, false));
             if (prevUser == null) {
                 logger.info("User {} is NOT registered !", userName);
                 logoffResponse.setSuccess(false).setFailReason("User " + userName + " is NOT a registered !");
                 he.sendResponseHeaders(400, 0);
-            } else if (prevUser.getOnline().equals("false")) {
+            } else if (!prevUser.getOnline()) {
                 logger.info("User {} has already log off !", userName);
                 logoffResponse.setSuccess(false).setFailReason("User " + userName + " has already log off !");
                 he.sendResponseHeaders(400, 0);
