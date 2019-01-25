@@ -52,7 +52,8 @@ public class MongoDB implements MyDatabase{
         if (user.getPassword() != null) {
             filter = and(filter, eq(User.PASSWORD, user.getPassword()));
         }
-        final Document prevUserDoc = db.getCollection(MyDatabase.USERS).findOneAndUpdate(filter, new Document("$set", userToDoc(user)));
+        User userUpdate = new User(null, null, user.getEmail(), user.getPhoneNumber(), user.getOnline());
+        final Document prevUserDoc = db.getCollection(MyDatabase.USERS).findOneAndUpdate(filter, new Document("$set", userToDoc(userUpdate)));
         return docToUser(prevUserDoc);
     }
 
@@ -66,8 +67,6 @@ public class MongoDB implements MyDatabase{
                  doc.getString(User.PHONE),
                  doc.getBoolean(User.ONLINE));
     }
-
-
 
     private Bson userToBson(User filter) {
         Bson bson = new BsonDocument();
@@ -108,3 +107,4 @@ public class MongoDB implements MyDatabase{
     }
 
 }
+
