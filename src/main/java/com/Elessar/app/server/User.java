@@ -4,29 +4,34 @@ package com.Elessar.app.server;
  * Created by Hans on 1/16/19.
  */
 public class User {
-    private final String userName, passowordHash, email, phoneNumber;
-    boolean online;
-    public User(String userName, String passowordHash, String email, String phoneNumber, boolean online) {
+    public static final String NAME = "name", PASSWORD = "password", PHONE = "phone", EMAIL = "email", ONLINE = "online";
+    private final String userName, password, email, phoneNumber;
+    private final boolean online;
+    public User(String userName, String password, String email, String phoneNumber, boolean online) {
         this.userName = userName;
-        this.passowordHash = passowordHash;
+        this.password = password;
         this.email = email;
         this.phoneNumber = phoneNumber;
         this.online = online;
     }
 
+    public String getName() {
+        return userName;
+    }
+
     public String getPassword() {
-        return passowordHash;
+        return password;
     }
 
-    public void setOnline() {
-        online = true;
+    public String getEmail() {
+        return email;
     }
 
-    public void setOffline() {
-        online = false;
+    public String getPhoneNumber() {
+        return phoneNumber;
     }
 
-    public boolean getOnlineStatus() {
+    public boolean getOnline() {
         return online;
     }
 }

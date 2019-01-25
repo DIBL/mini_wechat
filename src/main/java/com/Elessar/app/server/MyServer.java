@@ -4,13 +4,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Scanner;
-
+import com.Elessar.database.MyDatabase;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -23,12 +20,12 @@ public class MyServer {
 
     private final String serverName;
     private final int port;
-    private final Map<String, User> userData;
+    private final MyDatabase db;
 
-    public MyServer(String serverName, int port) {
+    public MyServer(String serverName, int port, MyDatabase db) {
         this.serverName = serverName;
         this.port = port;
-        userData = new HashMap<String, User>();
+        this.db = db;
     }
 
     public void run() {
@@ -36,9 +33,9 @@ public class MyServer {
             final HttpServer server = HttpServer.create(new InetSocketAddress(serverName, port), 0);
             server.createContext("/", new RootHandler());
             server.createContext("/echo", new EchoHandler());
-            server.createContext("/register", new RegisterHandler(userData));
-            server.createContext("/logon", new LogOnHandler(userData));
-            server.createContext("/logoff", new LogOffHandler(userData));
+            server.createContext("/register", new RegisterHandler(db));
+            server.createContext("/logon", new LogOnHandler(db));
+            server.createContext("/logoff", new LogOffHandler(db));
             server.setExecutor(null);
             server.start();
             logger.info("Server started at port {}", port);
@@ -77,7 +74,6 @@ public class MyServer {
             }
 
             try (InputStream is = he.getRequestBody()) {
-                // final String request = IOUtils.toString(is, StandardCharsets.UTF_8);
                 final Scanner s = new Scanner(is).useDelimiter("\\A");
                 String request = s.hasNext() ? s.next() : "";
                 logger.info("Handle echo request: {}", request);

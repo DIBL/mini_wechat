@@ -9,7 +9,8 @@ import com.Elessar.proto.Registration.RegistrationResponse;
 import com.Elessar.proto.Registration.RegistrationRequest;
 import com.google.api.client.http.*;
 import com.google.api.client.http.javanet.NetHttpTransport;
-
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import javax.xml.bind.DatatypeConverter;
 import java.net.URL;
 import java.security.MessageDigest;
@@ -18,6 +19,7 @@ import java.security.MessageDigest;
  * Created by Hans on 1/13/19.
  */
 public class MyClient {
+    private static final Logger logger = LogManager.getLogger(MyClient.class);
     private final URL hostURL;
     private final HttpClient httpClient;
 
@@ -35,12 +37,12 @@ public class MyClient {
             final LogonResponse logonResponse = LogonResponse.parseFrom(response.getContent());
 
             if (logonResponse.getSuccess()) {
-                System.out.printf("User %s Log On Successfully !\n", userName);
+                logger.info("User {} log on successfully", userName);
             } else {
-                System.out.printf("User $s Fail to Log On, Because: %s\n", userName, logonResponse.getFailReason());
+                logger.info("User {} fail to log on, because {}", userName, logonResponse.getFailReason());
             }
         } catch (Exception e) {
-            System.out.println("Log On request failed: " + e.getMessage());
+            logger.error("Caught exception during user log on: {}", e.getMessage());
         }
     }
 
@@ -53,12 +55,12 @@ public class MyClient {
             final LogoffResponse logoffResponse = LogoffResponse.parseFrom(response.getContent());
 
             if (logoffResponse.getSuccess()) {
-                System.out.printf("User %s Log Off Successfully !\n", userName);
+                logger.info("User {} log off successfully", userName);
             } else {
-                System.out.printf("User %s Fail to Log Off, Because: %s\n", userName, logoffResponse.getFailReason());
+                logger.info("User {} fail to log off, because {}", userName, logoffResponse.getFailReason());
             }
         } catch (Exception e) {
-            System.out.println("Log Off request failed: " + e.getMessage());
+            logger.error("Caught exception during user log off: {}", e.getMessage());
         }
     }
 
@@ -74,12 +76,12 @@ public class MyClient {
             final RegistrationResponse registerResponse = RegistrationResponse.parseFrom(response.getContent());
 
             if (registerResponse.getSuccess()) {
-                System.out.printf("User %s is Successfully Registered !\n", userName);
+                logger.info("User {} register successfully", userName);
             } else {
-                System.out.printf("User %s Registration Failed Because: %s\n", userName, registerResponse.getFailReason());
+                logger.info("User {} fail to register, because {}", userName, registerResponse.getFailReason());
             }
         } catch (Exception e) {
-            System.out.println("Registration request failed: " + e.getMessage());
+            logger.error("Caught exception during user registration: {}", e.getMessage());
         }
     }
 
@@ -87,7 +89,7 @@ public class MyClient {
         try {
             httpClient.get(new URL(hostURL.toString() + "/echo"));
         } catch (Exception e) {
-            System.out.println("Echo request failed: " + e.getMessage());
+            logger.error("Caught exception during echo request: {}", e.getMessage());
         }
     }
 

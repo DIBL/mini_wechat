@@ -1,22 +1,27 @@
 package com.Elessar.app.server;
 
+import com.Elessar.database.MyDatabase;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.Elessar.proto.Registration.RegistrationResponse;
 import com.Elessar.proto.Registration.RegistrationRequest;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Map;
+
 
 /**
  * Created by Hans on 1/15/19.
  */
 public class RegisterHandler implements HttpHandler {
-    private final Map<String, User> userData;
+    private static final Logger logger = LogManager.getLogger(RegisterHandler.class);
+    private final MyDatabase db;
 
-    public RegisterHandler(Map<String, User> userData) {
-        this.userData = userData;
+    public RegisterHandler(MyDatabase db) {
+        this.db = db;
     }
 
     @Override
@@ -24,6 +29,7 @@ public class RegisterHandler implements HttpHandler {
         final String requestType = he.getRequestMethod();
         // Only handle POST request
         if (!"POST".equals(requestType)) {
+            logger.debug("Received non-POST request for registration");
             final String response = "NOT IMPLEMENTED\n";
             he.sendResponseHeaders(501, response.length());  // 501 tells the caller that this method is not supported by the server
             try (OutputStream os = he.getResponseBody()) {
@@ -35,14 +41,19 @@ public class RegisterHandler implements HttpHandler {
         try (final InputStream is = he.getRequestBody()) {
             final RegistrationRequest regRequest = RegistrationRequest.parseFrom(is);
             final RegistrationResponse.Builder regResponse = RegistrationResponse.newBuilder();
-
-            if (userData.containsKey(regRequest.getName())) {
-                regResponse.setSuccess(false).setFailReason("User Name " + regRequest.getName() + " Exists !");
-                he.sendResponseHeaders(400, 0);
-            } else {
-                userData.put(regRequest.getName(), new User(regRequest.getName(), regRequest.getPassword(), regRequest.getEmail(), regRequest.getPhoneNumber(), false));
+            final String userName = regRequest.getName();
+            try {
+                db.insert(new User(regRequest.getName(),
+                        regRequest.getPassword(),
+                        regRequest.getEmail(),
+                        regRequest.getPhoneNumber(), false));
+                logger.info("User {} successfully registered !", userName);
                 regResponse.setSuccess(true);
                 he.sendResponseHeaders(200, 0);
+            } catch (Exception e) {
+                logger.error("User name {} already exists, caught exception: {}", userName, e.getMessage());
+                regResponse.setSuccess(false).setFailReason("User Name " + userName + " Exists !");
+                he.sendResponseHeaders(400, 0);
             }
 
             try (final OutputStream os = he.getResponseBody()){
