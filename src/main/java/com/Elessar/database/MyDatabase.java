@@ -7,7 +7,7 @@ import java.util.List;
  * Created by Hans on 1/20/19.
  */
 public interface MyDatabase {
-    String USERS = "users";
+    public static final String USERS = "users", UPDATE = "update", INSERT = "insert", FIND = "find";
 
     /**
      * Insert user data into database. If the same user name already exists in database, an exception will be thrown

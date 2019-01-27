@@ -1,6 +1,7 @@
 package com.Elessar.app.server;
 
 import com.Elessar.database.MyDatabase;
+import com.Elessar.database.OperationsMonitor;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.Elessar.proto.Registration.RegistrationResponse;
@@ -19,9 +20,11 @@ import java.io.OutputStream;
 public class RegisterHandler implements HttpHandler {
     private static final Logger logger = LogManager.getLogger(RegisterHandler.class);
     private final MyDatabase db;
+    private final OperationsMonitor monitor;
 
-    public RegisterHandler(MyDatabase db) {
+    public RegisterHandler(MyDatabase db, OperationsMonitor monitor) {
         this.db = db;
+        this.monitor = monitor;
     }
 
     @Override
@@ -43,10 +46,12 @@ public class RegisterHandler implements HttpHandler {
             final RegistrationResponse.Builder regResponse = RegistrationResponse.newBuilder();
             final String userName = regRequest.getName();
             try {
+                monitor.timerStart(MyDatabase.INSERT);
                 db.insert(new User(regRequest.getName(),
                         regRequest.getPassword(),
                         regRequest.getEmail(),
                         regRequest.getPhoneNumber(), false));
+                monitor.timerEnd(MyDatabase.INSERT);
                 logger.info("User {} successfully registered !", userName);
                 regResponse.setSuccess(true);
                 he.sendResponseHeaders(200, 0);
@@ -60,5 +65,6 @@ public class RegisterHandler implements HttpHandler {
                 regResponse.build().writeTo(os);
             }
         }
+        monitor.timerReset(MyDatabase.INSERT);
     }
 }

@@ -1,6 +1,7 @@
 package com.Elessar.app.server;
 
 import com.Elessar.database.MyDatabase;
+import com.Elessar.database.OperationsMonitor;
 import com.Elessar.proto.Logon.LogonResponse;
 import com.Elessar.proto.Logon.LogonRequest;
 import com.sun.net.httpserver.HttpExchange;
@@ -18,8 +19,10 @@ import java.io.OutputStream;
 public class LogOnHandler implements HttpHandler {
     private static final Logger logger = LogManager.getLogger(LogOnHandler.class);
     private final MyDatabase db;
-    public LogOnHandler(MyDatabase db) {
+    private final OperationsMonitor monitor;
+    public LogOnHandler(MyDatabase db, OperationsMonitor monitor) {
         this.db = db;
+        this.monitor = monitor;
     }
 
     @Override
@@ -33,7 +36,7 @@ public class LogOnHandler implements HttpHandler {
             try (OutputStream os = he.getResponseBody()) {
                 os.write(response.getBytes());
             }
-            return ;
+            return;
         }
 
         try (final InputStream is = he.getRequestBody()) {
@@ -42,7 +45,9 @@ public class LogOnHandler implements HttpHandler {
             final String userName = logonRequest.getName();
             final String password = logonRequest.getPassword();
 
+            monitor.timerStart(MyDatabase.UPDATE);
             final User prevUser = db.update(new User(userName, password, null, null, true));
+            monitor.timerEnd(MyDatabase.UPDATE);
             if (prevUser == null) {
                 logger.info("User {} and password combination does NOT exist !", userName);
                 logonResponse.setSuccess(false).setFailReason("User " + userName + " password combination does NOT exist !");
@@ -61,6 +66,6 @@ public class LogOnHandler implements HttpHandler {
                 logonResponse.build().writeTo(os);
             }
         }
+        monitor.timerReset(MyDatabase.UPDATE);
     }
-
 }

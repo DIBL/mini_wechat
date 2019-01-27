@@ -1,6 +1,7 @@
 package com.Elessar.app.server;
 
 import com.Elessar.database.MyDatabase;
+import com.Elessar.database.OperationsMonitor;
 import com.Elessar.proto.Logoff.LogoffResponse;
 import com.Elessar.proto.Logoff.LogoffRequest;
 import com.sun.net.httpserver.HttpExchange;
@@ -18,9 +19,10 @@ import java.io.OutputStream;
 public class LogOffHandler implements HttpHandler {
     private static final Logger logger = LogManager.getLogger(LogOffHandler.class);
     private final MyDatabase db;
-
-    public LogOffHandler(MyDatabase db) {
+    private final OperationsMonitor monitor;
+    public LogOffHandler(MyDatabase db, OperationsMonitor monitor) {
         this.db = db;
+        this.monitor = monitor;
     }
 
     @Override
@@ -42,7 +44,9 @@ public class LogOffHandler implements HttpHandler {
             final LogoffResponse.Builder logoffResponse = LogoffResponse.newBuilder();
             final String userName = logoffRequest.getName();
 
+            monitor.timerStart(MyDatabase.UPDATE);
             final User prevUser = db.update(new User(userName, null, null, null, false));
+            monitor.timerEnd(MyDatabase.UPDATE);
             if (prevUser == null) {
                 logger.info("User {} is NOT registered !", userName);
                 logoffResponse.setSuccess(false).setFailReason("User " + userName + " is NOT a registered !");
@@ -60,7 +64,7 @@ public class LogOffHandler implements HttpHandler {
             try (final OutputStream os = he.getResponseBody()) {
                 logoffResponse.build().writeTo(os);
             }
+            monitor.timerReset(MyDatabase.UPDATE);
         }
     }
-
 }

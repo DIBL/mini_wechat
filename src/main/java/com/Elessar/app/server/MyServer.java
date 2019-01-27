@@ -5,7 +5,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.util.Scanner;
+import java.util.Timer;
+import java.util.TimerTask;
+
 import com.Elessar.database.MyDatabase;
+import com.Elessar.database.OperationsMonitor;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import com.sun.net.httpserver.HttpExchange;
@@ -21,11 +26,15 @@ public class MyServer {
     private final String serverName;
     private final int port;
     private final MyDatabase db;
+    private final OperationsMonitor monitor;
+    private static Timer timer;
 
     public MyServer(String serverName, int port, MyDatabase db) {
         this.serverName = serverName;
         this.port = port;
         this.db = db;
+        this.monitor = new OperationsMonitor();
+        timer = new Timer();
     }
 
     public void run() {
@@ -33,15 +42,24 @@ public class MyServer {
             final HttpServer server = HttpServer.create(new InetSocketAddress(serverName, port), 0);
             server.createContext("/", new RootHandler());
             server.createContext("/echo", new EchoHandler());
-            server.createContext("/register", new RegisterHandler(db));
-            server.createContext("/logon", new LogOnHandler(db));
-            server.createContext("/logoff", new LogOffHandler(db));
+            server.createContext("/register", new RegisterHandler(db, monitor));
+            server.createContext("/logon", new LogOnHandler(db, monitor));
+            server.createContext("/logoff", new LogOffHandler(db, monitor));
             server.setExecutor(null);
             server.start();
             logger.info("Server started at port {}", port);
         } catch (IOException e) {
             logger.fatal("Caught exception during server startup: {}", e);
         }
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                for (String operation : monitor.getOperationSet()) {
+                    logger.printf(Level.INFO, "%s operation takes %.2f ms on average", operation, monitor.getAvgTime(operation));
+                    logger.info("{} operation is performed {} times", operation, monitor.getCount(operation));
+                }
+            }
+        }, 10000, 300000);
     }
 
     private static class RootHandler implements HttpHandler {
