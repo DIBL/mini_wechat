@@ -6,6 +6,10 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.util.Scanner;
 import com.Elessar.database.MyDatabase;
+import com.Elessar.app.client.HttpClient;
+import com.Elessar.database.MyDatabase;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import com.sun.net.httpserver.HttpExchange;
@@ -21,11 +25,14 @@ public class MyServer {
     private final String serverName;
     private final int port;
     private final MyDatabase db;
+    private final HttpClient httpClient;
 
     public MyServer(String serverName, int port, MyDatabase db) {
         this.serverName = serverName;
         this.port = port;
         this.db = db;
+        this.httpClient = new HttpClient(new NetHttpTransport().createRequestFactory());
+>>>>>>> 1016860... person to person
     }
 
     public void run() {
@@ -36,11 +43,12 @@ public class MyServer {
             server.createContext("/register", new RegisterHandler(db));
             server.createContext("/logon", new LogOnHandler(db));
             server.createContext("/logoff", new LogOffHandler(db));
+            server.createContext("/sendMessage", new SendMsgHandler(db, httpClient));
             server.setExecutor(null);
             server.start();
             logger.info("Server started at port {}", port);
         } catch (IOException e) {
-            logger.fatal("Caught exception during server startup: {}", e);
+            logger.fatal("Caught exception during server startup: {}", e.getMessage());
         }
     }
 

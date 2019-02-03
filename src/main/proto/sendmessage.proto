@@ -1,0 +1,18 @@
+syntax = "proto2";
+
+package proto;
+
+option java_package = "com.Elessar.proto";
+
+message SendMsgRequest {
+  required string from_user = 1;
+  required string to_user = 2;
+  required string text = 3;
+  required int64 timestamp = 4;
+}
+
+message SendMsgResponse {
+  required bool success = 1;
+  optional string failReason = 2;
+}
+

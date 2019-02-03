@@ -10,6 +10,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
 
 
 /**
@@ -40,21 +41,33 @@ public class LogOnHandler implements HttpHandler {
             final LogonRequest logonRequest = LogonRequest.parseFrom(is);
             final LogonResponse.Builder logonResponse = LogonResponse.newBuilder();
             final String userName = logonRequest.getName();
-            final String password = logonRequest.getPassword();
 
-            final User prevUser = db.update(new User(userName, password, null, null, true));
+            final User prevUser = db.update(new User(userName,
+                                                     logonRequest.getPassword(), null, null,
+                                                     logonRequest.getClientURL(), true));
             if (prevUser == null) {
                 logger.info("User {} and password combination does NOT exist !", userName);
                 logonResponse.setSuccess(false).setFailReason("User " + userName + " password combination does NOT exist !");
                 he.sendResponseHeaders(400, 0);
             } else if (prevUser.getOnline()) {
                 logger.info("User {} has already log on !", userName);
-                logonResponse.setSuccess(false).setFailReason("User " + userName + " has already log on !");
-                he.sendResponseHeaders(400, 0);
-            } else {
-                logger.info("User {} successfully log on !", userName);
                 logonResponse.setSuccess(true);
                 he.sendResponseHeaders(200, 0);
+            } else {
+                logger.info("User {} successfully log on !", userName);
+                // Get the list of unread messages sent to user and update them to read
+                List<Message> messages = db.findAndUpdate(new Message(null, userName, null, null, false),
+                                                          new Message(null, userName, null, null, true));
+                for (Message message : messages) {
+                    logonResponse.addMessages(
+                            Logon.UnreadMsg.newBuilder()
+                            .setFromUser(message.getFromUser())
+                            .setToUser(message.getToUser())
+                            .setText(message.getText())
+                            .setTimestamp(message.getTimestamp()));
+                }
+                logonResponse.setSuccess(true);
+                he.sendResponseHeaders(200, 0); //2nd arg = 0 means chunked encoding is used, an arbitrary number of bytes may be written
             }
 
             try (final OutputStream os = he.getResponseBody()) {
