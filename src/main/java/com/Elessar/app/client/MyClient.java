@@ -3,13 +3,12 @@ package com.Elessar.app.client;
 
 import com.Elessar.proto.Logoff.LogoffRequest;
 import com.Elessar.proto.Logoff.LogoffResponse;
-import com.Elessar.proto.Logon;
 import com.Elessar.proto.Logon.LogonRequest;
 import com.Elessar.proto.Logon.LogonResponse;
 import com.Elessar.proto.Registration.RegistrationResponse;
 import com.Elessar.proto.Registration.RegistrationRequest;
-import com.Elessar.proto.Sendmessage.SendMsgRequest;
-import com.Elessar.proto.Sendmessage.SendMsgResponse;
+import com.Elessar.proto.P2Pmessage.P2PMsgRequest;
+import com.Elessar.proto.P2Pmessage.P2PMsgResponse;
 import com.google.api.client.http.*;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import org.apache.logging.log4j.LogManager;
@@ -23,7 +22,6 @@ import java.security.MessageDigest;
  */
 public class MyClient {
     private static final Logger logger = LogManager.getLogger(MyClient.class);
-    private static final Logger msglogger = LogManager.getLogger("messages");
     private final String hostURL;
     private final HttpClient httpClient;
     public MyClient(String hostURL) {
@@ -31,71 +29,46 @@ public class MyClient {
         this.httpClient = new HttpClient(new NetHttpTransport().createRequestFactory());
     }
 
-    public void sendMessage(String fromUser, String toUser, String text) {
-        try {
-            final SendMsgRequest.Builder sendMsgRequest = SendMsgRequest.newBuilder();
-            sendMsgRequest.setFromUser(fromUser).setToUser(toUser).setText(text).setTimestamp(System.currentTimeMillis());
-
-            final HttpResponse response = httpClient.post(new URL(hostURL + "/sendMessage"), sendMsgRequest.build());
-            final SendMsgResponse sendMsgResponse = SendMsgResponse.parseFrom(response.getContent());
-
-            if (sendMsgResponse.getSuccess()) {
-                logger.info("Message sent from {} to {} successfully", fromUser, toUser);
-            } else {
-                logger.info("Message sent failed, because {}", sendMsgResponse.getFailReason());
-            }
-        } catch (Exception e) {
-            logger.error("Caught exception during sending message: {}", e.getMessage());
-        }
+    public P2PMsgResponse sendMessage (String fromUser, String toUser, String text) throws Exception {
+        final P2PMsgRequest.Builder sendMsgRequest = P2PMsgRequest.newBuilder().setFromUser(fromUser)
+                                                                                 .setToUser(toUser)
+                                                                                 .setText(text)
+                                                                                 .setTimestamp(System.currentTimeMillis());
+        final HttpResponse response = httpClient.post(new URL(hostURL + "/p2pMessage"), sendMsgRequest.build());
+        return P2PMsgResponse.parseFrom(response.getContent());
     }
 
-    public boolean logOn(String userName, String password, String clientURL) {
-        boolean isSuccess = false;
+    public LogonResponse logOn(String userName, String password, String clientURL) {
+        LogonResponse logonResponse = null;
         try {
-            // Log on with credentials and current IP
+            // Log on with credentials and client current IP
             final LogonRequest.Builder logonRequest = LogonRequest.newBuilder();
             logonRequest.setName(userName).setPassword(hash(password)).setClientURL(clientURL);
 
             final HttpResponse response = httpClient.post(new URL(hostURL + "/logon"), logonRequest.build());
-            final LogonResponse logonResponse = LogonResponse.parseFrom(response.getContent());
-
-            if (logonResponse.getSuccess()) {
-                logger.info("User {} log on successfully", userName);
-                isSuccess = true;
-                for (Logon.UnreadMsg message : logonResponse.getMessagesList()) {
-                    System.out.println(message.toString());
-                }
-            } else {
-                logger.info("User {} fail to log on, because {}", userName, logonResponse.getFailReason());
-            }
+            logonResponse = LogonResponse.parseFrom(response.getContent());
         } catch (Exception e) {
             logger.error("Caught exception during user log on: {}", e.getMessage());
         }
-        return isSuccess;
+        return logonResponse;
     }
 
-    public boolean logOff(String userName) {
-        boolean isSuccess = false;
+    public LogoffResponse logOff(String userName) {
+        LogoffResponse logoffResponse = null;
         try {
             final LogoffRequest.Builder logoffRequest= LogoffRequest.newBuilder();
             logoffRequest.setName(userName);
 
             final HttpResponse response = httpClient.post(new URL(hostURL + "/logoff"), logoffRequest.build());
-            final LogoffResponse logoffResponse = LogoffResponse.parseFrom(response.getContent());
-
-            if (logoffResponse.getSuccess()) {
-                logger.info("User {} log off successfully", userName);
-                isSuccess = true;
-            } else {
-                logger.info("User {} fail to log off, because {}", userName, logoffResponse.getFailReason());
-            }
+            logoffResponse = LogoffResponse.parseFrom(response.getContent());
         } catch (Exception e) {
             logger.error("Caught exception during user log off: {}", e.getMessage());
         }
-        return isSuccess;
+        return logoffResponse;
     }
 
-    public void register (String userName, String password, String email, String phoneNumber) {
+    public RegistrationResponse register (String userName, String password, String email, String phoneNumber) {
+        RegistrationResponse registerResponse = null;
         try {
             final RegistrationRequest.Builder registerRequest = RegistrationRequest.newBuilder();
             registerRequest.setName(userName).setPassword(hash(password)).setEmail(email);
@@ -104,16 +77,11 @@ public class MyClient {
             }
 
             final HttpResponse response = httpClient.post(new URL(hostURL + "/register"), registerRequest.build());
-            final RegistrationResponse registerResponse = RegistrationResponse.parseFrom(response.getContent());
-
-            if (registerResponse.getSuccess()) {
-                logger.info("User {} register successfully", userName);
-            } else {
-                logger.info("User {} fail to register, because {}", userName, registerResponse.getFailReason());
-            }
+            registerResponse = RegistrationResponse.parseFrom(response.getContent());
         } catch (Exception e) {
             logger.error("Caught exception during user registration: {}", e.getMessage());
         }
+        return registerResponse;
     }
 
     public void echo () {

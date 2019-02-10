@@ -28,7 +28,7 @@ public class MongoDB implements MyDatabase{
             .append(Message.TO_USER, message.getToUser())
             .append(Message.TEXT, message.getText())
             .append(Message.TIMESTAMP, message.getTimestamp())
-            .append(Message.ISREAD, message.getIsRead());
+            .append(Message.ISDELIVERED, message.getIsRead());
          db.getCollection(MyDatabase.MESSAGES).insertOne(doc);
     }
 
@@ -97,7 +97,7 @@ public class MongoDB implements MyDatabase{
                 doc.getString(Message.TO_USER),
                 doc.getString(Message.TEXT),
                 doc.getLong(Message.TIMESTAMP),
-                doc.getBoolean(Message.ISREAD));
+                doc.getBoolean(Message.ISDELIVERED));
     }
 
     private User docToUser(Document doc) {
@@ -127,7 +127,7 @@ public class MongoDB implements MyDatabase{
             bson = and(bson, eq(Message.TIMESTAMP, filter.getTimestamp()));
         }
         if (filter.getIsRead() != null) {
-            bson = and(bson, eq(Message.ISREAD, filter.getIsRead()));
+            bson = and(bson, eq(Message.ISDELIVERED, filter.getIsRead()));
         }
 
         return bson;
@@ -195,7 +195,7 @@ public class MongoDB implements MyDatabase{
             doc.append(Message.TIMESTAMP, msg.getTimestamp());
         }
         if (msg.getIsRead() != null) {
-            doc.append(Message.ISREAD, msg.getIsRead());
+            doc.append(Message.ISDELIVERED, msg.getIsRead());
         }
         return doc;
     }

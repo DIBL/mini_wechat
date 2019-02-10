@@ -1,6 +1,7 @@
 package com.Elessar.app.server;
 
 import com.Elessar.database.MyDatabase;
+import com.Elessar.proto.Logon;
 import com.Elessar.proto.Logon.LogonResponse;
 import com.Elessar.proto.Logon.LogonRequest;
 import com.sun.net.httpserver.HttpExchange;

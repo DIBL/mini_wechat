@@ -2,52 +2,69 @@ package com.Elessar.app;
 
 import com.Elessar.app.client.MyClient;
 import com.Elessar.app.client.MyClientServer;
+import com.Elessar.proto.Logoff.LogoffResponse;
+import com.Elessar.proto.Logon.LogonResponse;
+import com.Elessar.proto.Logon.UnreadMsg;
+import com.Elessar.proto.P2Pmessage.P2PMsgResponse;
+import com.Elessar.proto.Registration.RegistrationResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.util.Collections;
-import java.util.Enumeration;
+import java.util.*;
+
 
 /**
  * Created by Hans on 1/13/19.
  */
 public class ClientMain {
+    /**
+     *
+     * @param args [0] server address, [1] server port number, [2] client port number
+     */
     public static void main(String[] args){
-        try {
-            BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
-            System.out.println("Please specify server IP address:");
-            final String serverAddress = stdin.readLine();
-            System.out.println("Please specify server port number:");
-            final int serverPort = Integer.valueOf(stdin.readLine());
-            System.out.println("Please specify client port number to build local server:");
-            final int clientPort = Integer.valueOf(stdin.readLine());
-            StringBuilder serverURL = new StringBuilder();
-            serverURL.append("http://").append(serverAddress).append(":").append(serverPort);
-            final String clientAddress = "127.0.0.1";
-            StringBuilder clientURL = new StringBuilder();
-            clientURL.append("http://").append(clientAddress).append(":").append(clientPort);
-            final MyClient client = new MyClient(serverURL.toString());
-            final MyClientServer clientServer = new MyClientServer("localhost", clientPort);
-            clientServer.run();
+        final Logger logger = LogManager.getLogger(ClientMain.class);
+        final Queue<String> unreadMsgs = new LinkedList<>();
 
-            boolean isLogOn = false;
-            String currUser = "";
-            while (true) {
+        final BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
+        final String serverAddress = args[0];
+        final int serverPort = Integer.valueOf(args[1]);
+        final String clientAddress = "127.0.0.1";               // Need to replace with real external IP later
+        final int clientPort = Integer.valueOf(args[2]);
+
+
+        final StringBuilder serverURL = new StringBuilder();
+        serverURL.append("http://").append(serverAddress).append(":").append(serverPort);
+        final StringBuilder clientURL = new StringBuilder();
+        clientURL.append("http://").append(clientAddress).append(":").append(clientPort);
+
+        final MyClient client = new MyClient(serverURL.toString());
+        final MyClientServer clientServer = new MyClientServer("localhost", clientPort, unreadMsgs);
+
+        while (true) {
+            try {
+                clientServer.run();
+
+                while (!unreadMsgs.isEmpty()) {
+                    System.out.println(unreadMsgs.poll());
+                }
+
+                boolean isLogOn = false;
+                String currUser = "";
                 System.out.println("1. Register");
                 System.out.println("2. Log on");
                 System.out.println("3. Send Message");
                 System.out.println("4. Log off");
-                int option = Integer.valueOf(stdin.readLine());
-                String fromUser;
-                String toUser;
-                String password;
-                String email;
-                String phone;
-                String text;
+                final int option = Integer.valueOf(stdin.readLine());
+                final String fromUser;
+                final String toUser;
+                final String password;
+                final String email;
+                final String phone;
+                final String text;
                 switch (option) {
-                    case 1:
+                    case 1:     //Register
                         System.out.println("Please enter username");
                         fromUser = stdin.readLine();
                         System.out.println("Please enter password");
@@ -56,23 +73,40 @@ public class ClientMain {
                         email = stdin.readLine();
                         System.out.println("Please enter phone");
                         phone = stdin.readLine();
-                        client.register(fromUser, password, email, phone);
+                        RegistrationResponse registerResponse = client.register(fromUser, password, email, phone);
+                        if (registerResponse.getSuccess()) {
+                            logger.info("User {} register successfully", fromUser);
+                        } else {
+                            logger.info("User {} fail to register, because {}", fromUser, registerResponse.getFailReason());
+                        }
                         break;
-                    case 2:
+
+
+                    case 2:     // Log on
                         if (isLogOn) {
-                            System.out.printf("User %s already log on, please log off first before switch to other user account", currUser);
+                            System.out.printf("User %s already log on, please log off first before trying switching to other user account", currUser);
                             break;
                         }
+
                         System.out.println("Please enter username");
                         fromUser = stdin.readLine();
                         System.out.println("Please enter password");
                         password = stdin.readLine();
-                        if (client.logOn(fromUser, password, clientURL.toString())) {
+                        final LogonResponse logonResponse = client.logOn(fromUser, password, clientURL.toString());
+                        if (logonResponse.getSuccess()) {
+                            logger.info("User {} log on successfully", fromUser);
                             isLogOn = true;
                             currUser = fromUser;
+                            for (UnreadMsg message : logonResponse.getMessagesList()) {
+                                System.out.println(message.toString());
+                            }
+                        } else {
+                            logger.info("User {} fail to log on, because {}", fromUser, logonResponse.getFailReason());
                         }
                         break;
-                    case 3:
+
+
+                    case 3:     // Send Message
                         if (!isLogOn) {
                             System.out.println("Please log on first !");
                             break;
@@ -81,25 +115,41 @@ public class ClientMain {
                         toUser = stdin.readLine();
                         System.out.println("Please enter text to send");
                         text = stdin.readLine();
-                        client.sendMessage(currUser, toUser, text);
+                        try {
+                            P2PMsgResponse p2pMsgResponse = client.sendMessage(currUser, toUser, text);
+                            if (p2pMsgResponse.getSuccess()) {
+                                logger.debug("Message sent to {} successfully", toUser);
+                            } else {
+                                logger.error("Message fail to send because {}, please retry !", p2pMsgResponse.getFailReason());
+                            }
+                        } catch (Exception e) {
+                            logger.error("Caught exception during sending message: {}, please retry !", e.getMessage());
+                        }
                         break;
-                    case 4:
+
+
+                    case 4:     // Log off
                         if (!isLogOn) {
                             System.out.println("Please log on first !");
                             break;
                         }
-                        if (client.logOff(currUser)) {
+                        final LogoffResponse logoffResponse = client.logOff(currUser);
+                        if (logoffResponse.getSuccess()) {
+                            logger.info("User {} log off successfully", currUser);
                             isLogOn = false;
                             currUser = "";
+                        } else {
+                            logger.info("User {} fail to log off, because {}", currUser, logoffResponse.getFailReason());
                         }
                         break;
+
                     default:
                         System.out.println("Invalid option !");
                         break;
                 }
+            } catch (Exception e) {
+                logger.info("Client failed because {}", e.getMessage());
             }
-        } catch (Exception e) {
-            System.out.println("Client failed because " + e.getMessage());
         }
     }
 }

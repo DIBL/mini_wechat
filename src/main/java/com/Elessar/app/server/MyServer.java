@@ -32,7 +32,6 @@ public class MyServer {
         this.port = port;
         this.db = db;
         this.httpClient = new HttpClient(new NetHttpTransport().createRequestFactory());
->>>>>>> 1016860... person to person
     }
 
     public void run() {
@@ -43,7 +42,7 @@ public class MyServer {
             server.createContext("/register", new RegisterHandler(db));
             server.createContext("/logon", new LogOnHandler(db));
             server.createContext("/logoff", new LogOffHandler(db));
-            server.createContext("/sendMessage", new SendMsgHandler(db, httpClient));
+            server.createContext("/p2pMessage", new SendMsgHandler(db, httpClient));
             server.setExecutor(null);
             server.start();
             logger.info("Server started at port {}", port);

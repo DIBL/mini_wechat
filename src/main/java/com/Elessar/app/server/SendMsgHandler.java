@@ -2,8 +2,8 @@ package com.Elessar.app.server;
 
 import com.Elessar.app.client.HttpClient;
 import com.Elessar.database.MyDatabase;
-import com.Elessar.proto.Sendmessage.SendMsgRequest;
-import com.Elessar.proto.Sendmessage.SendMsgResponse;
+import com.Elessar.proto.P2Pmessage.P2PMsgRequest;
+import com.Elessar.proto.P2Pmessage.P2PMsgResponse;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.apache.logging.log4j.LogManager;
@@ -25,7 +25,7 @@ public class SendMsgHandler implements HttpHandler {
     public SendMsgHandler(MyDatabase db, HttpClient httpClient) {
         this.db = db;
         this.httpClient = httpClient;
-        this.msgSender = new MsgPushSender(db);
+        this.msgSender = new DirectMsgSender(db);
     }
 
     @Override
@@ -43,37 +43,48 @@ public class SendMsgHandler implements HttpHandler {
         }
 
         try (final InputStream is = he.getRequestBody()) {
-            final SendMsgRequest sendMsgRequest = SendMsgRequest.parseFrom(is);
-            final SendMsgResponse.Builder sendMsgResponse = SendMsgResponse.newBuilder();
-            final String toUser = sendMsgRequest.getToUser();
-            final Message message = new Message(sendMsgRequest.getFromUser(),
-                                                sendMsgRequest.getToUser(),
-                                                sendMsgRequest.getText(),
-                                                sendMsgRequest.getTimestamp(), false);
+            final P2PMsgRequest p2pMsgRequest = P2PMsgRequest.parseFrom(is);
+            final P2PMsgResponse.Builder p2pMsgResponse = P2PMsgResponse.newBuilder();
+            final String toUser = p2pMsgRequest.getToUser();
+            final Message message = new Message(p2pMsgRequest.getFromUser(),
+                                                p2pMsgRequest.getToUser(),
+                                                p2pMsgRequest.getText(),
+                                                System.currentTimeMillis(), false);     // Sync msg to server's current time
             List<User> receivers = db.find(new User(toUser, null, null, null, null, null));
             if (receivers.isEmpty()) {
                 logger.info("Can NOT send message to {} because {} is NOT registered !", toUser, toUser);
-                sendMsgResponse.setSuccess(false).setFailReason(toUser + " is NOT registered");
+                p2pMsgResponse.setSuccess(false).setFailReason(toUser + " is NOT registered");
                 he.sendResponseHeaders(400, 0);
             } else {
                 User receiver = receivers.get(0);
                 try {
                     db.insert(message);
-                    logger.info("Message stored in database successfully");
-                    sendMsgResponse.setSuccess(true);
-                    he.sendResponseHeaders(200, 0);
+                    logger.debug("Message stored in database successfully");
                     if (receiver.getOnline()) {
-                        msgSender.send(message, receiver.getURL(), httpClient);
+                        p2pMsgResponse.mergeFrom(msgSender.send(message, receiver.getURL(), httpClient));
+                        if (p2pMsgResponse.getSuccess() && p2pMsgResponse.getIsDelivered()) {
+                            logger.debug("Message successfully sent from {} to {}", message.getFromUser(), message.getToUser());
+                            db.findAndUpdate(new Message(message.getFromUser(), message.getToUser(), message.getText(), message.getTimestamp(), false),
+                                             new Message(message.getFromUser(), message.getToUser(), message.getText(), message.getTimestamp(), true));
+                            he.sendResponseHeaders(200, 0);
+                        } else {
+                            logger.info("Message fail to send to {} because {}", message.getToUser(), p2pMsgResponse.getFailReason());
+                            he.sendResponseHeaders(500, 0);
+                        }
+                    } else {
+                        p2pMsgResponse.setSuccess(true);
+                        p2pMsgResponse.setIsDelivered(false);
+                        he.sendResponseHeaders(200, 0);
                     }
                 } catch (Exception e) {
                     logger.error("Caught exception during storing message into database: {}", e.getMessage());
-                    sendMsgResponse.setSuccess(false).setFailReason(e.getMessage());
-                    he.sendResponseHeaders(500, 0);     // should use 40X to 50X ??
+                    p2pMsgResponse.setSuccess(false).setFailReason(e.getMessage());
+                    he.sendResponseHeaders(500, 0);
                 }
             }
 
             try (final OutputStream os = he.getResponseBody()) {
-                sendMsgResponse.build().writeTo(os);
+                p2pMsgResponse.build().writeTo(os);
             }
         }
     }
