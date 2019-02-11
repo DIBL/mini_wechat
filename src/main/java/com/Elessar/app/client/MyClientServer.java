@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
 
 /**
  * Created by Hans on 2/1/19.
@@ -21,9 +21,9 @@ public class MyClientServer {
     private static final Logger logger = LogManager.getLogger(MyClientServer.class);
     private final String serverName;
     private final int port;
-    private final Queue<String> unreadMsgs;
+    private final BlockingQueue<String> unreadMsgs;
 
-    public MyClientServer(String serverName, int port, Queue<String> unreadMsgs) {
+    public MyClientServer(String serverName, int port, BlockingQueue<String> unreadMsgs) {
         this.serverName = serverName;
         this.port = port;
         this.unreadMsgs = unreadMsgs;
@@ -42,9 +42,9 @@ public class MyClientServer {
     }
 
     private static class p2pMsgHandler implements HttpHandler {
-        private Queue<String> unreadMsgs;
+        private BlockingQueue<String> unreadMsgs;
 
-        public p2pMsgHandler (Queue<String> unreadMsgs) {
+        public p2pMsgHandler (BlockingQueue<String> unreadMsgs) {
             this.unreadMsgs = unreadMsgs;
         }
 
@@ -66,15 +66,18 @@ public class MyClientServer {
                 final P2PMsgRequest p2pMsgRequest = P2PMsgRequest.parseFrom(is);
                 final P2PMsgResponse.Builder p2pMsgResponse = P2PMsgResponse.newBuilder();
 
-                unreadMsgs.offer(p2pMsgRequest.toString());
-
+                unreadMsgs.put(p2pMsgRequest.toString());
+                //System.out.println(p2pMsgRequest.toString());
                 logger.debug("Message received by {}", p2pMsgRequest.getToUser());
                 p2pMsgResponse.setSuccess(true);
                 p2pMsgResponse.setIsDelivered(true);
                 he.sendResponseHeaders(200, 0);
+
                 try (final OutputStream os = he.getResponseBody()) {
                     p2pMsgResponse.build().writeTo(os);
                 }
+            } catch (Exception e) {
+                logger.error("Caught exception during receiving message {}", e.getMessage());
             }
         }
     }
