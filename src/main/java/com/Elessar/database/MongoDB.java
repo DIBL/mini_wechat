@@ -22,28 +22,23 @@ public class MongoDB implements MyDatabase{
     }
 
     @Override
+    public void insert(List<Message> messages) {
+        final List<Document> docs = new ArrayList<>();
+        for (Message message : messages) {
+            docs.add(msgToDoc(message));
+        }
+        db.getCollection(MyDatabase.MESSAGES).insertMany(docs);
+    }
+
+    @Override
     public void insert(Message message) {
-         final Document doc = new Document();
-         doc.append(Message.FROM_USER, message.getFromUser())
-            .append(Message.TO_USER, message.getToUser())
-            .append(Message.TEXT, message.getText())
-            .append(Message.TIMESTAMP, message.getTimestamp())
-            .append(Message.ISDELIVERED, message.getIsRead());
+         final Document doc = msgToDoc(message);
          db.getCollection(MyDatabase.MESSAGES).insertOne(doc);
     }
 
     @Override
     public void insert(User user) {
-        final Document doc = new Document();
-        doc.append(User.NAME, user.getName());
-        doc.append(User.PASSWORD, user.getPassword());
-        doc.append(User.EMAIL, user.getEmail());
-        doc.append(User.URL, user.getURL());
-        doc.append(User.ONLINE, user.getOnline());
-        String phone = user.getPhoneNumber();
-        if (phone != null && phone.length() > 0) {
-            doc.append(User.PHONE, phone);
-        }
+        final Document doc = userToDoc(user);
         db.getCollection(MyDatabase.USERS).insertOne(doc);
     }
 
@@ -71,11 +66,17 @@ public class MongoDB implements MyDatabase{
 
     }
 
+    @Deprecated
     @Override
     public List<Message> findAndUpdate(Message filter, Message update) {
         final List<Message> findResult = find(filter);
         db.getCollection(MyDatabase.MESSAGES).updateMany(msgToBson(filter), new Document("$set", msgToDoc(update)));
         return findResult;
+    }
+
+    @Override
+    public void update(Message filter, Message update) {
+        db.getCollection(MyDatabase.MESSAGES).updateMany(msgToBson(filter), new Document("$set", msgToDoc(update)));
     }
 
     @Override
@@ -126,8 +127,8 @@ public class MongoDB implements MyDatabase{
         if (filter.getTimestamp() != null) {
             bson = and(bson, eq(Message.TIMESTAMP, filter.getTimestamp()));
         }
-        if (filter.getIsRead() != null) {
-            bson = and(bson, eq(Message.ISDELIVERED, filter.getIsRead()));
+        if (filter.getIsDelivered() != null) {
+            bson = and(bson, eq(Message.ISDELIVERED, filter.getIsDelivered()));
         }
 
         return bson;
@@ -194,8 +195,8 @@ public class MongoDB implements MyDatabase{
         if (msg.getTimestamp() != null) {
             doc.append(Message.TIMESTAMP, msg.getTimestamp());
         }
-        if (msg.getIsRead() != null) {
-            doc.append(Message.ISDELIVERED, msg.getIsRead());
+        if (msg.getIsDelivered() != null) {
+            doc.append(Message.ISDELIVERED, msg.getIsDelivered());
         }
         return doc;
     }

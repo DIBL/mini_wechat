@@ -11,6 +11,12 @@ public interface MyDatabase {
     String USERS = "users", MESSAGES = "messages";
 
     /**
+     * Insert list of messages into database
+     * @param messages list of data to be inserted into database
+     */
+    void insert(List<Message> messages);
+
+    /**
      * Insert message data into database.
      * @param message data to be inserted into database
      *
@@ -34,11 +40,19 @@ public interface MyDatabase {
     User update(User user);
 
     /**
-     * Find and update messages in databse
+     * Update messages in database
+     * @param filter defines filter fields
+     * @param update defines update fields
+     */
+    void update(Message filter, Message update);
+
+    /**
+     * Find and update messages in database
      * @param filter defines filter fields
      * @param update defines update fields
      * @return a list of messages before update
      */
+    @Deprecated
     List<Message> findAndUpdate(Message filter, Message update);
 
     /**

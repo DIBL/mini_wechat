@@ -32,7 +32,7 @@ public class Message {
         return timestamp;
     }
 
-    public Boolean getIsRead() {
+    public Boolean getIsDelivered() {
         return isDelivered;
     }
 

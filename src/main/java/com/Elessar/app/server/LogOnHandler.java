@@ -1,9 +1,9 @@
 package com.Elessar.app.server;
 
 import com.Elessar.database.MyDatabase;
-import com.Elessar.proto.Logon;
 import com.Elessar.proto.Logon.LogonResponse;
 import com.Elessar.proto.Logon.LogonRequest;
+import com.Elessar.proto.P2Pmsg.P2PMsgResponse;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.apache.logging.log4j.LogManager;
@@ -20,8 +20,10 @@ import java.util.List;
 public class LogOnHandler implements HttpHandler {
     private static final Logger logger = LogManager.getLogger(LogOnHandler.class);
     private final MyDatabase db;
-    public LogOnHandler(MyDatabase db) {
+    private final MsgSender msgSender;
+    public LogOnHandler(MyDatabase db, MsgSender msgSender) {
         this.db = db;
+        this.msgSender = msgSender;
     }
 
     @Override
@@ -42,10 +44,10 @@ public class LogOnHandler implements HttpHandler {
             final LogonRequest logonRequest = LogonRequest.parseFrom(is);
             final LogonResponse.Builder logonResponse = LogonResponse.newBuilder();
             final String userName = logonRequest.getName();
+            final String url = he.getRemoteAddress().toString();
 
-            final User prevUser = db.update(new User(userName,
-                                                     logonRequest.getPassword(), null, null,
-                                                     logonRequest.getClientURL(), true));
+            final User prevUser = db.update(new User(userName, logonRequest.getPassword(), null, null, url, true));
+
             if (prevUser == null) {
                 logger.info("User {} and password combination does NOT exist !", userName);
                 logonResponse.setSuccess(false).setFailReason("User " + userName + " password combination does NOT exist !");
@@ -56,19 +58,26 @@ public class LogOnHandler implements HttpHandler {
                 he.sendResponseHeaders(200, 0);
             } else {
                 logger.info("User {} successfully log on !", userName);
-                // Get the list of unread messages sent to user and update them to read
-                List<Message> messages = db.findAndUpdate(new Message(null, userName, null, null, false),
-                                                          new Message(null, userName, null, null, true));
-                for (Message message : messages) {
-                    logonResponse.addMessages(
-                            Logon.UnreadMsg.newBuilder()
-                            .setFromUser(message.getFromUser())
-                            .setToUser(message.getToUser())
-                            .setText(message.getText())
-                            .setTimestamp(message.getTimestamp()));
-                }
                 logonResponse.setSuccess(true);
                 he.sendResponseHeaders(200, 0); //2nd arg = 0 means chunked encoding is used, an arbitrary number of bytes may be written
+
+                // Get the list of unread messages sent to user
+                List<Message> messages = db.find(new Message(null, userName, null, null, false));
+
+                try {
+                    P2PMsgResponse p2pMsgResponse = msgSender.send(messages, url);
+
+                    if (p2pMsgResponse.getSuccess() && p2pMsgResponse.getIsDelivered()) {
+                        db.update(new Message(null, userName, null, null, false),
+                                  new Message(null, null, null, null, true));
+                    } else {
+                        logger.info("Fail to send unread messages to {} during log on because {}", userName, p2pMsgResponse.getFailReason());
+                    }
+
+                } catch (Exception e) {
+                    logger.error("Caught exception when sending messages during log on: {}", e.getMessage());
+                }
+
             }
 
             try (final OutputStream os = he.getResponseBody()) {

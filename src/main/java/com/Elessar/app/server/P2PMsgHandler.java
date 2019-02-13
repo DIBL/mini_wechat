@@ -2,8 +2,9 @@ package com.Elessar.app.server;
 
 import com.Elessar.app.client.HttpClient;
 import com.Elessar.database.MyDatabase;
-import com.Elessar.proto.P2Pmessage.P2PMsgRequest;
-import com.Elessar.proto.P2Pmessage.P2PMsgResponse;
+import com.Elessar.proto.P2Pmsg;
+import com.Elessar.proto.P2Pmsg.P2PMsgRequest;
+import com.Elessar.proto.P2Pmsg.P2PMsgResponse;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.apache.logging.log4j.LogManager;
@@ -12,20 +13,21 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by Hans on 1/27/19.
  */
-public class SendMsgHandler implements HttpHandler {
-    private static final Logger logger = LogManager.getLogger(SendMsgHandler.class);
+public class P2PMsgHandler implements HttpHandler {
+    private static final Logger logger = LogManager.getLogger(P2PMsgHandler.class);
     private final MyDatabase db;
     private final HttpClient httpClient;
     private final MsgSender msgSender;
-    public SendMsgHandler(MyDatabase db, HttpClient httpClient) {
+    public P2PMsgHandler(MyDatabase db, HttpClient httpClient, MsgSender msgSender) {
         this.db = db;
         this.httpClient = httpClient;
-        this.msgSender = new DirectMsgSender(db);
+        this.msgSender = msgSender;
     }
 
     @Override
@@ -33,7 +35,7 @@ public class SendMsgHandler implements HttpHandler {
         final String requestType = he.getRequestMethod();
         // Only handle POST request
         if (!"POST".equals(requestType)) {
-            logger.debug("Received non-POST request for log on");
+            logger.debug("Received non-POST request for person to person messaging");
             final String response = "NOT IMPLEMENTED\n";
             he.sendResponseHeaders(501, response.length());  // 501 tells the caller that this method is not supported by the server
             try (OutputStream os = he.getResponseBody()) {
@@ -45,30 +47,38 @@ public class SendMsgHandler implements HttpHandler {
         try (final InputStream is = he.getRequestBody()) {
             final P2PMsgRequest p2pMsgRequest = P2PMsgRequest.parseFrom(is);
             final P2PMsgResponse.Builder p2pMsgResponse = P2PMsgResponse.newBuilder();
+            final String fromUser = p2pMsgRequest.getFromUser();
             final String toUser = p2pMsgRequest.getToUser();
-            final Message message = new Message(p2pMsgRequest.getFromUser(),
-                                                p2pMsgRequest.getToUser(),
-                                                p2pMsgRequest.getText(),
-                                                System.currentTimeMillis(), false);     // Sync msg to server's current time
+
             List<User> receivers = db.find(new User(toUser, null, null, null, null, null));
+
             if (receivers.isEmpty()) {
                 logger.info("Can NOT send message to {} because {} is NOT registered !", toUser, toUser);
                 p2pMsgResponse.setSuccess(false).setFailReason(toUser + " is NOT registered");
                 he.sendResponseHeaders(400, 0);
             } else {
                 User receiver = receivers.get(0);
+
+                List<Message> messages = new ArrayList<>();
+                for (P2Pmsg.Message msg : p2pMsgRequest.getMessageList()) {
+                    messages.add(new Message(fromUser, toUser, msg.getText(), System.currentTimeMillis(), false)); // Sync msg to server's current time
+                }
+
                 try {
-                    db.insert(message);
-                    logger.debug("Message stored in database successfully");
+                    db.insert(messages);
+                    logger.debug("Messages stored in database successfully");
+
                     if (receiver.getOnline()) {
-                        p2pMsgResponse.mergeFrom(msgSender.send(message, receiver.getURL(), httpClient));
+                        p2pMsgResponse.mergeFrom(msgSender.send(messages, receiver.getURL()));
+
                         if (p2pMsgResponse.getSuccess() && p2pMsgResponse.getIsDelivered()) {
-                            logger.debug("Message successfully sent from {} to {}", message.getFromUser(), message.getToUser());
-                            db.findAndUpdate(new Message(message.getFromUser(), message.getToUser(), message.getText(), message.getTimestamp(), false),
-                                             new Message(message.getFromUser(), message.getToUser(), message.getText(), message.getTimestamp(), true));
+                            logger.debug("Message successfully sent from {} to {}", fromUser, toUser);
+                            db.update(new Message(fromUser, toUser, null, null, false),
+                                      new Message(null, null, null, null, true));
                             he.sendResponseHeaders(200, 0);
+
                         } else {
-                            logger.info("Message fail to send to {} because {}", message.getToUser(), p2pMsgResponse.getFailReason());
+                            logger.info("Message fail to send to {} because {}", toUser, p2pMsgResponse.getFailReason());
                             he.sendResponseHeaders(500, 0);
                         }
                     } else {
@@ -76,8 +86,9 @@ public class SendMsgHandler implements HttpHandler {
                         p2pMsgResponse.setIsDelivered(false);
                         he.sendResponseHeaders(200, 0);
                     }
+
                 } catch (Exception e) {
-                    logger.error("Caught exception during storing message into database: {}", e.getMessage());
+                    logger.error("Caught exception during send message: {}", e.getMessage());
                     p2pMsgResponse.setSuccess(false).setFailReason(e.getMessage());
                     he.sendResponseHeaders(500, 0);
                 }

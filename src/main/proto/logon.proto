@@ -7,18 +7,9 @@ option java_package = "com.Elessar.proto";
 message LogonRequest {
   required string name = 1;
   required string password = 2;
-  required string clientURL = 3;
 }
 
 message LogonResponse {
   required bool success = 1;
   optional string failReason = 2;
-  repeated UnreadMsg messages = 3;
-}
-
-message UnreadMsg {
-  required string from_user = 1;
-  required string to_user = 2;
-  required string text = 3;
-  required int64 timestamp = 4;
 }

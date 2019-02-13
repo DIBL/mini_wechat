@@ -1,7 +1,7 @@
 package com.Elessar.app.client;
 
-import com.Elessar.proto.P2Pmessage.P2PMsgRequest;
-import com.Elessar.proto.P2Pmessage.P2PMsgResponse;
+import com.Elessar.proto.P2Pmsg.P2PMsgRequest;
+import com.Elessar.proto.P2Pmsg.P2PMsgResponse;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -21,18 +21,18 @@ public class MyClientServer {
     private static final Logger logger = LogManager.getLogger(MyClientServer.class);
     private final String serverName;
     private final int port;
-    private final BlockingQueue<String> unreadMsgs;
+    private final BlockingQueue<String> messageQueue;
 
-    public MyClientServer(String serverName, int port, BlockingQueue<String> unreadMsgs) {
+    public MyClientServer(String serverName, int port, BlockingQueue<String> messageQueue) {
         this.serverName = serverName;
         this.port = port;
-        this.unreadMsgs = unreadMsgs;
+        this.messageQueue = messageQueue;
     }
 
     public void run() {
         try {
             final HttpServer server = HttpServer.create(new InetSocketAddress(serverName, port), 0);
-            server.createContext("/p2pMessage", new p2pMsgHandler(unreadMsgs));
+            server.createContext("/p2pMessage", new p2pMsgHandler(messageQueue));
             server.setExecutor(null);
             server.start();
             logger.info("Client Server started at port {}", port);
@@ -42,10 +42,10 @@ public class MyClientServer {
     }
 
     private static class p2pMsgHandler implements HttpHandler {
-        private BlockingQueue<String> unreadMsgs;
+        private BlockingQueue<String> messageQueue;
 
-        public p2pMsgHandler (BlockingQueue<String> unreadMsgs) {
-            this.unreadMsgs = unreadMsgs;
+        public p2pMsgHandler (BlockingQueue<String> messageQueue) {
+            this.messageQueue = messageQueue;
         }
 
         @Override
@@ -66,18 +66,21 @@ public class MyClientServer {
                 final P2PMsgRequest p2pMsgRequest = P2PMsgRequest.parseFrom(is);
                 final P2PMsgResponse.Builder p2pMsgResponse = P2PMsgResponse.newBuilder();
 
-                unreadMsgs.put(p2pMsgRequest.toString());
-                //System.out.println(p2pMsgRequest.toString());
-                logger.debug("Message received by {}", p2pMsgRequest.getToUser());
-                p2pMsgResponse.setSuccess(true);
-                p2pMsgResponse.setIsDelivered(true);
-                he.sendResponseHeaders(200, 0);
+                try {
+                    messageQueue.put(p2pMsgRequest.toString());
+                    logger.debug("Messages received by {}", p2pMsgRequest.getToUser());
+
+                    p2pMsgResponse.setSuccess(true).setIsDelivered(true);
+                    he.sendResponseHeaders(200, 0);
+                } catch (Exception e) {
+                    logger.error("Caught exception during receiving messages {}", e.getMessage());
+                    p2pMsgResponse.setSuccess(false).setIsDelivered(false);
+                    he.sendResponseHeaders(400, 0);
+                }
 
                 try (final OutputStream os = he.getResponseBody()) {
                     p2pMsgResponse.build().writeTo(os);
                 }
-            } catch (Exception e) {
-                logger.error("Caught exception during receiving message {}", e.getMessage());
             }
         }
     }

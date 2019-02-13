@@ -4,8 +4,7 @@ import com.Elessar.app.client.MyClient;
 import com.Elessar.app.client.MyClientServer;
 import com.Elessar.proto.Logoff.LogoffResponse;
 import com.Elessar.proto.Logon.LogonResponse;
-import com.Elessar.proto.Logon.UnreadMsg;
-import com.Elessar.proto.P2Pmessage.P2PMsgResponse;
+import com.Elessar.proto.P2Pmsg.P2PMsgResponse;
 import com.Elessar.proto.Registration.RegistrationResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -21,13 +20,16 @@ import java.util.concurrent.TimeUnit;
  * Created by Hans on 1/13/19.
  */
 public class ClientMain {
+    private static final int REGISTER = 1, LOG_ON = 2, P2P_MSG = 3, LOG_OFF = 4;
+    private static final Logger logger = LogManager.getLogger(ClientMain.class);
+    
     /**
      *
      * @param args [0] server address, [1] server port number, [2] client port number
      */
     public static void main(String[] args){
-        final Logger logger = LogManager.getLogger(ClientMain.class);
-        final BlockingQueue<String> unreadMsgs = new LinkedBlockingQueue<>();
+
+        final BlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
 
         final String serverAddress = args[0];
         final int serverPort = Integer.valueOf(args[1]);
@@ -41,19 +43,18 @@ public class ClientMain {
         clientURL.append("http://").append(clientAddress).append(":").append(clientPort);
 
         final MyClient client = new MyClient(serverURL.toString());
-        final MyClientServer clientServer = new MyClientServer("localhost", clientPort, unreadMsgs);
+        final MyClientServer clientServer = new MyClientServer("localhost", clientPort, messageQueue);
 
         clientServer.run();
 
-        boolean isLogOn = false;
         String currUser = "";
 
         try (final BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in))) {
             while (true) {
                 try {
-                    String unreadMsg = unreadMsgs.poll(1L, TimeUnit.SECONDS);
-                    if (unreadMsg != null) {
-                        System.out.println(unreadMsg);
+                    String message = messageQueue.poll(1L, TimeUnit.SECONDS);
+                    if (message != null) {
+                        System.out.println(message);
                     }
 
                     System.out.println("1. Register");
@@ -69,57 +70,69 @@ public class ClientMain {
                     final String phone;
                     final String text;
                     switch (option) {
-                        case 1:     //Register
+                        case REGISTER:
                             System.out.println("Please enter username");
                             fromUser = stdin.readLine();
+
                             System.out.println("Please enter password");
                             password = stdin.readLine();
+
                             System.out.println("Please enter email");
                             email = stdin.readLine();
+
                             System.out.println("Please enter phone");
                             phone = stdin.readLine();
-                            RegistrationResponse registerResponse = client.register(fromUser, password, email, phone);
-                            if (registerResponse.getSuccess()) {
-                                logger.info("User {} register successfully", fromUser);
-                            } else {
-                                logger.info("User {} fail to register, because {}", fromUser, registerResponse.getFailReason());
+
+                            try {
+                                RegistrationResponse registerResponse = client.register(fromUser, password, email, phone);
+                                if (registerResponse.getSuccess()) {
+                                    logger.info("User {} register successfully", fromUser);
+                                } else {
+                                    logger.info("User {} fail to register, because {}", fromUser, registerResponse.getFailReason());
+                                }
+                            } catch (Exception e) {
+                                logger.error("Caught exception during user registration: {}", e.getMessage());
                             }
+
                             break;
 
-
-                        case 2:     // Log on
-                            if (isLogOn) {
+                        case LOG_ON:
+                            if (!currUser.isEmpty()) {
                                 System.out.printf("User %s already log on, please log off first before trying switching to other user account", currUser);
                                 break;
                             }
 
                             System.out.println("Please enter username");
                             fromUser = stdin.readLine();
+
                             System.out.println("Please enter password");
                             password = stdin.readLine();
-                            final LogonResponse logonResponse = client.logOn(fromUser, password, clientURL.toString());
-                            if (logonResponse.getSuccess()) {
-                                logger.info("User {} log on successfully", fromUser);
-                                isLogOn = true;
-                                currUser = fromUser;
-                                for (UnreadMsg message : logonResponse.getMessagesList()) {
-                                    System.out.println(message.toString());
+
+                            try {
+                                final LogonResponse logonResponse = client.logOn(fromUser, password);
+                                if (logonResponse.getSuccess()) {
+                                    logger.info("User {} log on successfully", fromUser);
+                                    currUser = fromUser;
+                                } else {
+                                    logger.info("User {} fail to log on, because {}", fromUser, logonResponse.getFailReason());
                                 }
-                            } else {
-                                logger.info("User {} fail to log on, because {}", fromUser, logonResponse.getFailReason());
+                            } catch (Exception e) {
+                                logger.error("Caught exception during user log on: {}", e.getMessage());
                             }
                             break;
 
 
-                        case 3:     // Send Message
-                            if (!isLogOn) {
+                        case P2P_MSG:
+                            if (currUser.isEmpty()) {
                                 System.out.println("Please log on first !");
                                 break;
                             }
                             System.out.println("Please enter user name to send message");
                             toUser = stdin.readLine();
+
                             System.out.println("Please enter text to send");
                             text = stdin.readLine();
+
                             try {
                                 P2PMsgResponse p2pMsgResponse = client.sendMessage(currUser, toUser, text);
                                 if (p2pMsgResponse.getSuccess()) {
@@ -130,22 +143,27 @@ public class ClientMain {
                             } catch (Exception e) {
                                 logger.error("Caught exception during sending message: {}, please retry !", e.getMessage());
                             }
+
                             break;
 
-
-                        case 4:     // Log off
-                            if (!isLogOn) {
+                        case LOG_OFF:
+                            if (currUser.isEmpty()) {
                                 System.out.println("Please log on first !");
                                 break;
                             }
-                            final LogoffResponse logoffResponse = client.logOff(currUser);
-                            if (logoffResponse.getSuccess()) {
-                                logger.info("User {} log off successfully", currUser);
-                                isLogOn = false;
-                                currUser = "";
-                            } else {
-                                logger.info("User {} fail to log off, because {}", currUser, logoffResponse.getFailReason());
+
+                            try {
+                                final LogoffResponse logoffResponse = client.logOff(currUser);
+                                if (logoffResponse.getSuccess()) {
+                                    logger.info("User {} log off successfully", currUser);
+                                    currUser = "";
+                                } else {
+                                    logger.info("User {} fail to log off, because {}", currUser, logoffResponse.getFailReason());
+                                }
+                            } catch (Exception e) {
+                                logger.error("Caught exception during user log off: {}", e.getMessage());
                             }
+
                             break;
 
                         default:

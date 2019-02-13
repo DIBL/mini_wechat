@@ -5,10 +5,11 @@ import com.Elessar.proto.Logoff.LogoffRequest;
 import com.Elessar.proto.Logoff.LogoffResponse;
 import com.Elessar.proto.Logon.LogonRequest;
 import com.Elessar.proto.Logon.LogonResponse;
+import com.Elessar.proto.P2Pmsg;
 import com.Elessar.proto.Registration.RegistrationResponse;
 import com.Elessar.proto.Registration.RegistrationRequest;
-import com.Elessar.proto.P2Pmessage.P2PMsgRequest;
-import com.Elessar.proto.P2Pmessage.P2PMsgResponse;
+import com.Elessar.proto.P2Pmsg.P2PMsgRequest;
+import com.Elessar.proto.P2Pmsg.P2PMsgResponse;
 import com.google.api.client.http.*;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import org.apache.logging.log4j.LogManager;
@@ -29,59 +30,48 @@ public class MyClient {
         this.httpClient = new HttpClient(new NetHttpTransport().createRequestFactory());
     }
 
-    public P2PMsgResponse sendMessage (String fromUser, String toUser, String text) throws Exception {
+    public P2PMsgResponse sendMessage (String fromUser,
+                                       String toUser,
+                                       String text) throws Exception {
         final P2PMsgRequest.Builder sendMsgRequest = P2PMsgRequest.newBuilder().setFromUser(fromUser)
-                                                                                 .setToUser(toUser)
-                                                                                 .setText(text)
-                                                                                 .setTimestamp(System.currentTimeMillis());
+                                                                               .setToUser(toUser)
+                                                                               .addMessage(P2Pmsg.Message.newBuilder()
+                                                                                       .setText(text)
+                                                                                       .setTimestamp(0L));  // Set time stamp at server side
+
         final HttpResponse response = httpClient.post(new URL(hostURL + "/p2pMessage"), sendMsgRequest.build());
         return P2PMsgResponse.parseFrom(response.getContent());
     }
 
-    public LogonResponse logOn(String userName, String password, String clientURL) {
-        LogonResponse logonResponse = null;
-        try {
-            // Log on with credentials and client current IP
-            final LogonRequest.Builder logonRequest = LogonRequest.newBuilder();
-            logonRequest.setName(userName).setPassword(hash(password)).setClientURL(clientURL);
+    public LogonResponse logOn(String userName,
+                               String password) throws Exception {
+            final LogonRequest.Builder logonRequest = LogonRequest.newBuilder().setName(userName)
+                                                                               .setPassword(hash(password));
 
             final HttpResponse response = httpClient.post(new URL(hostURL + "/logon"), logonRequest.build());
-            logonResponse = LogonResponse.parseFrom(response.getContent());
-        } catch (Exception e) {
-            logger.error("Caught exception during user log on: {}", e.getMessage());
-        }
-        return logonResponse;
+            return LogonResponse.parseFrom(response.getContent());
     }
 
-    public LogoffResponse logOff(String userName) {
-        LogoffResponse logoffResponse = null;
-        try {
-            final LogoffRequest.Builder logoffRequest= LogoffRequest.newBuilder();
-            logoffRequest.setName(userName);
+    public LogoffResponse logOff(String userName) throws Exception {
+            final LogoffRequest.Builder logoffRequest= LogoffRequest.newBuilder().setName(userName);
 
             final HttpResponse response = httpClient.post(new URL(hostURL + "/logoff"), logoffRequest.build());
-            logoffResponse = LogoffResponse.parseFrom(response.getContent());
-        } catch (Exception e) {
-            logger.error("Caught exception during user log off: {}", e.getMessage());
-        }
-        return logoffResponse;
+            return LogoffResponse.parseFrom(response.getContent());
     }
 
-    public RegistrationResponse register (String userName, String password, String email, String phoneNumber) {
-        RegistrationResponse registerResponse = null;
-        try {
-            final RegistrationRequest.Builder registerRequest = RegistrationRequest.newBuilder();
-            registerRequest.setName(userName).setPassword(hash(password)).setEmail(email);
-            if (phoneNumber != null) {
-                registerRequest.setPhoneNumber(phoneNumber);
-            }
-
-            final HttpResponse response = httpClient.post(new URL(hostURL + "/register"), registerRequest.build());
-            registerResponse = RegistrationResponse.parseFrom(response.getContent());
-        } catch (Exception e) {
-            logger.error("Caught exception during user registration: {}", e.getMessage());
+    public RegistrationResponse register (String userName,
+                                          String password,
+                                          String email,
+                                          String phoneNumber) throws Exception {
+        final RegistrationRequest.Builder registerRequest = RegistrationRequest.newBuilder().setName(userName)
+                                                                                            .setPassword(hash(password))
+                                                                                            .setEmail(email);
+        if (phoneNumber != null) {
+            registerRequest.setPhoneNumber(phoneNumber);
         }
-        return registerResponse;
+
+        final HttpResponse response = httpClient.post(new URL(hostURL + "/register"), registerRequest.build());
+        return RegistrationResponse.parseFrom(response.getContent());
     }
 
     public void echo () {
