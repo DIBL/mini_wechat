@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 public class ClientMain {
     private static final int REGISTER = 1, LOG_ON = 2, P2P_MSG = 3, LOG_OFF = 4;
     private static final Logger logger = LogManager.getLogger(ClientMain.class);
-    
+
     /**
      *
      * @param args [0] server address, [1] server port number, [2] client port number
@@ -33,14 +33,11 @@ public class ClientMain {
 
         final String serverAddress = args[0];
         final int serverPort = Integer.valueOf(args[1]);
-        final String clientAddress = "127.0.0.1";               // Need to replace with real external IP later
         final int clientPort = Integer.valueOf(args[2]);
 
 
         final StringBuilder serverURL = new StringBuilder();
         serverURL.append("http://").append(serverAddress).append(":").append(serverPort);
-        final StringBuilder clientURL = new StringBuilder();
-        clientURL.append("http://").append(clientAddress).append(":").append(clientPort);
 
         final MyClient client = new MyClient(serverURL.toString());
         final MyClientServer clientServer = new MyClientServer("localhost", clientPort, messageQueue);
