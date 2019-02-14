@@ -85,7 +85,7 @@ public class ClientMain {
                                 if (registerResponse.getSuccess()) {
                                     logger.info("User {} register successfully", fromUser);
                                 } else {
-                                    logger.info("User {} fail to register, because {}", fromUser, registerResponse.getFailReason());
+                                    logger.error("User {} fail to register, because {}", fromUser, registerResponse.getFailReason());
                                 }
                             } catch (Exception e) {
                                 logger.error("Caught exception during user registration: {}", e.getMessage());
@@ -111,7 +111,7 @@ public class ClientMain {
                                     logger.info("User {} log on successfully", fromUser);
                                     currUser = fromUser;
                                 } else {
-                                    logger.info("User {} fail to log on, because {}", fromUser, logonResponse.getFailReason());
+                                    logger.error("User {} fail to log on, because {}", fromUser, logonResponse.getFailReason());
                                 }
                             } catch (Exception e) {
                                 logger.error("Caught exception during user log on: {}", e.getMessage());
@@ -132,11 +132,12 @@ public class ClientMain {
 
                             try {
                                 P2PMsgResponse p2pMsgResponse = client.sendMessage(currUser, toUser, text);
+                                
                                 if (p2pMsgResponse.getSuccess()) {
                                     if (p2pMsgResponse.getIsDelivered()) {
-                                        logger.debug("Message sent to {} successfully", toUser);
+                                        logger.info("Message sent to {} successfully", toUser);
                                     } else {
-                                        logger.debug("Message sending request received by server, will deliver to {} once {} is online", toUser, toUser);
+                                        logger.info("Message sending request received by server, will deliver to {} once {} is online", toUser, toUser);
                                     }
                                 } else {
                                     logger.error("Message fail to send because {}, please retry !", p2pMsgResponse.getFailReason());
@@ -173,12 +174,12 @@ public class ClientMain {
                     }
 
                 } catch (Exception e) {
-                    logger.info("Client failed because {}", e.getMessage());
+                    logger.error("Client failed because {}", e.getMessage());
                 }
             }
 
         } catch (Exception e) {
-            logger.info("Cannot read from system input because: {}", e.getMessage());
+            logger.error("Cannot read from system input because: {}", e.getMessage());
         }
     }
 }

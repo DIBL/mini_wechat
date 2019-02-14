@@ -79,9 +79,10 @@ public class P2PMsgHandler implements HttpHandler {
                             he.sendResponseHeaders(200, 0);
 
                         } else {
-                            logger.info("Message fail to send to {} because {}", toUser, p2pMsgResponse.getFailReason());
+                            logger.error("Message fail to send to {} because {}", toUser, p2pMsgResponse.getFailReason());
                             he.sendResponseHeaders(500, 0);
                         }
+
                     } else {
                         p2pMsgResponse.setSuccess(true)
                                       .setIsDelivered(false);
