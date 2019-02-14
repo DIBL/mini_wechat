@@ -54,7 +54,9 @@ public class P2PMsgHandler implements HttpHandler {
 
             if (receivers.isEmpty()) {
                 logger.info("Can NOT send message to {} because {} is NOT registered !", toUser, toUser);
-                p2pMsgResponse.setSuccess(false).setFailReason(toUser + " is NOT registered");
+                p2pMsgResponse.setSuccess(false)
+                              .setIsDelivered(false)
+                              .setFailReason(toUser + " is NOT registered");
                 he.sendResponseHeaders(400, 0);
             } else {
                 User receiver = receivers.get(0);
@@ -73,8 +75,7 @@ public class P2PMsgHandler implements HttpHandler {
 
                         if (p2pMsgResponse.getSuccess() && p2pMsgResponse.getIsDelivered()) {
                             logger.debug("Message successfully sent from {} to {}", fromUser, toUser);
-                            db.update(new Message(fromUser, toUser, null, null, false),
-                                      new Message(null, null, null, null, true));
+                            db.update(messages, new Message(null, null, null, null, true));
                             he.sendResponseHeaders(200, 0);
 
                         } else {
@@ -82,14 +83,16 @@ public class P2PMsgHandler implements HttpHandler {
                             he.sendResponseHeaders(500, 0);
                         }
                     } else {
-                        p2pMsgResponse.setSuccess(true);
-                        p2pMsgResponse.setIsDelivered(false);
+                        p2pMsgResponse.setSuccess(true)
+                                      .setIsDelivered(false);
                         he.sendResponseHeaders(200, 0);
                     }
 
                 } catch (Exception e) {
                     logger.error("Caught exception during send message: {}", e.getMessage());
-                    p2pMsgResponse.setSuccess(false).setFailReason(e.getMessage());
+                    p2pMsgResponse.setSuccess(false)
+                                  .setIsDelivered(false)
+                                  .setFailReason(e.getMessage());
                     he.sendResponseHeaders(500, 0);
                 }
             }

@@ -44,9 +44,12 @@ public class LogOnHandler implements HttpHandler {
             final LogonRequest logonRequest = LogonRequest.parseFrom(is);
             final LogonResponse.Builder logonResponse = LogonResponse.newBuilder();
             final String userName = logonRequest.getName();
-            final String url = he.getRemoteAddress().toString();
+            final StringBuilder clientURL = new StringBuilder().append("http:/")
+                                                               .append(he.getRemoteAddress().getAddress().toString())
+                                                               .append(":")
+                                                               .append(logonRequest.getPort());
 
-            final User prevUser = db.update(new User(userName, logonRequest.getPassword(), null, null, url, true));
+            final User prevUser = db.update(new User(userName, logonRequest.getPassword(), null, null, clientURL.toString(), true));
 
             if (prevUser == null) {
                 logger.info("User {} and password combination does NOT exist !", userName);
@@ -65,11 +68,10 @@ public class LogOnHandler implements HttpHandler {
                 List<Message> messages = db.find(new Message(null, userName, null, null, false));
 
                 try {
-                    P2PMsgResponse p2pMsgResponse = msgSender.send(messages, url);
+                    P2PMsgResponse p2pMsgResponse = msgSender.send(messages, clientURL.toString());
 
                     if (p2pMsgResponse.getSuccess() && p2pMsgResponse.getIsDelivered()) {
-                        db.update(new Message(null, userName, null, null, false),
-                                  new Message(null, null, null, null, true));
+                        db.update(messages, new Message(null, null, null, null, true));
                     } else {
                         logger.info("Fail to send unread messages to {} during log on because {}", userName, p2pMsgResponse.getFailReason());
                     }

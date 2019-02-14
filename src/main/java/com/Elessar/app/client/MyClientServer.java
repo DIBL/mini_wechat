@@ -32,7 +32,7 @@ public class MyClientServer {
     public void run() {
         try {
             final HttpServer server = HttpServer.create(new InetSocketAddress(serverName, port), 0);
-            server.createContext("/p2pMessage", new p2pMsgHandler(messageQueue));
+            server.createContext("/p2pMessage", new P2PMsgHandler(messageQueue));
             server.setExecutor(null);
             server.start();
             logger.info("Client Server started at port {}", port);
@@ -41,10 +41,10 @@ public class MyClientServer {
         }
     }
 
-    private static class p2pMsgHandler implements HttpHandler {
+    private static class P2PMsgHandler implements HttpHandler {
         private BlockingQueue<String> messageQueue;
 
-        public p2pMsgHandler (BlockingQueue<String> messageQueue) {
+        public P2PMsgHandler (BlockingQueue<String> messageQueue) {
             this.messageQueue = messageQueue;
         }
 
@@ -70,11 +70,14 @@ public class MyClientServer {
                     messageQueue.put(p2pMsgRequest.toString());
                     logger.debug("Messages received by {}", p2pMsgRequest.getToUser());
 
-                    p2pMsgResponse.setSuccess(true).setIsDelivered(true);
+                    p2pMsgResponse.setSuccess(true)
+                                  .setIsDelivered(true);
                     he.sendResponseHeaders(200, 0);
                 } catch (Exception e) {
                     logger.error("Caught exception during receiving messages {}", e.getMessage());
-                    p2pMsgResponse.setSuccess(false).setIsDelivered(false);
+                    p2pMsgResponse.setSuccess(false)
+                                  .setIsDelivered(false)
+                                  .setFailReason(e.getMessage());
                     he.sendResponseHeaders(400, 0);
                 }
 

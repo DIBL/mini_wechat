@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.or;
 
 /**
  * Created by Hans on 1/20/19.
@@ -75,6 +76,11 @@ public class MongoDB implements MyDatabase{
     }
 
     @Override
+    public void update(List<Message> filters, Message update) {
+        db.getCollection(MyDatabase.MESSAGES).updateMany(msgsToBson(filters), new Document("$set", msgToDoc(update)));
+    }
+
+    @Override
     public void update(Message filter, Message update) {
         db.getCollection(MyDatabase.MESSAGES).updateMany(msgToBson(filter), new Document("$set", msgToDoc(update)));
     }
@@ -132,6 +138,14 @@ public class MongoDB implements MyDatabase{
         }
 
         return bson;
+    }
+
+    private Bson msgsToBson(List<Message> filters) {
+        final List<Bson> filtersBson = new ArrayList<>();
+        for (Message filter : filters) {
+            filtersBson.add(msgToBson(filter));
+        }
+        return or(filtersBson);
     }
 
     private Bson userToBson(User filter) {

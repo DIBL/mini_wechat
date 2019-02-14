@@ -41,6 +41,13 @@ public interface MyDatabase {
 
     /**
      * Update messages in database
+     * @param filters defines group of filters as (message1 || message2 || message3 ...)
+     * @param update defines update fields
+     */
+    void update(List<Message> filters, Message update);
+
+    /**
+     * Update messages in database
      * @param filter defines filter fields
      * @param update defines update fields
      */

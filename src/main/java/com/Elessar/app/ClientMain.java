@@ -95,7 +95,7 @@ public class ClientMain {
 
                         case LOG_ON:
                             if (!currUser.isEmpty()) {
-                                System.out.printf("User %s already log on, please log off first before trying switching to other user account", currUser);
+                                System.out.printf("User %s already log on, please log off first before trying switching to other user account\n", currUser);
                                 break;
                             }
 
@@ -106,7 +106,7 @@ public class ClientMain {
                             password = stdin.readLine();
 
                             try {
-                                final LogonResponse logonResponse = client.logOn(fromUser, password);
+                                final LogonResponse logonResponse = client.logOn(fromUser, password, clientPort);
                                 if (logonResponse.getSuccess()) {
                                     logger.info("User {} log on successfully", fromUser);
                                     currUser = fromUser;
@@ -133,7 +133,11 @@ public class ClientMain {
                             try {
                                 P2PMsgResponse p2pMsgResponse = client.sendMessage(currUser, toUser, text);
                                 if (p2pMsgResponse.getSuccess()) {
-                                    logger.debug("Message sent to {} successfully", toUser);
+                                    if (p2pMsgResponse.getIsDelivered()) {
+                                        logger.debug("Message sent to {} successfully", toUser);
+                                    } else {
+                                        logger.debug("Message sending request received by server, will deliver to {} once {} is online", toUser, toUser);
+                                    }
                                 } else {
                                     logger.error("Message fail to send because {}, please retry !", p2pMsgResponse.getFailReason());
                                 }

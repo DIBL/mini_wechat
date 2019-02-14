@@ -44,9 +44,11 @@ public class MyClient {
     }
 
     public LogonResponse logOn(String userName,
-                               String password) throws Exception {
+                               String password,
+                               int clientPort) throws Exception {
             final LogonRequest.Builder logonRequest = LogonRequest.newBuilder().setName(userName)
-                                                                               .setPassword(hash(password));
+                                                                               .setPassword(hash(password))
+                                                                               .setPort(clientPort);
 
             final HttpResponse response = httpClient.post(new URL(hostURL + "/logon"), logonRequest.build());
             return LogonResponse.parseFrom(response.getContent());
