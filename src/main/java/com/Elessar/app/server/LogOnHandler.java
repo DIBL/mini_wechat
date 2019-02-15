@@ -44,8 +44,8 @@ public class LogOnHandler implements HttpHandler {
             final LogonRequest logonRequest = LogonRequest.parseFrom(is);
             final LogonResponse.Builder logonResponse = LogonResponse.newBuilder();
             final String userName = logonRequest.getName();
-            final StringBuilder clientURL = new StringBuilder().append("http:/")
-                                                               .append(he.getRemoteAddress().getAddress().toString())
+            final StringBuilder clientURL = new StringBuilder().append("http://")
+                                                               .append(he.getRemoteAddress().getAddress().getHostAddress())
                                                                .append(":")
                                                                .append(logonRequest.getPort());
 

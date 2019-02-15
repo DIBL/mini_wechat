@@ -132,7 +132,7 @@ public class ClientMain {
 
                             try {
                                 P2PMsgResponse p2pMsgResponse = client.sendMessage(currUser, toUser, text);
-                                
+
                                 if (p2pMsgResponse.getSuccess()) {
                                     if (p2pMsgResponse.getIsDelivered()) {
                                         logger.info("Message sent to {} successfully", toUser);
