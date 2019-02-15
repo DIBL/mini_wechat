@@ -44,9 +44,11 @@ public class RegisterHandler implements HttpHandler {
             final String userName = regRequest.getName();
             try {
                 db.insert(new User(regRequest.getName(),
-                        regRequest.getPassword(),
-                        regRequest.getEmail(),
-                        regRequest.getPhoneNumber(), false));
+                                   regRequest.getPassword(),
+                                   regRequest.getEmail(),
+                                   regRequest.getPhoneNumber(),
+                                   "",
+                                   false));
                 logger.info("User {} successfully registered !", userName);
                 regResponse.setSuccess(true);
                 he.sendResponseHeaders(200, 0);

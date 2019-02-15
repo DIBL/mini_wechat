@@ -6,6 +6,8 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.util.Scanner;
 import com.Elessar.database.MyDatabase;
+import com.Elessar.app.client.HttpClient;
+import com.google.api.client.http.javanet.NetHttpTransport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import com.sun.net.httpserver.HttpExchange;
@@ -21,11 +23,15 @@ public class MyServer {
     private final String serverName;
     private final int port;
     private final MyDatabase db;
+    private final HttpClient httpClient;
+    private final MsgSender msgSender;
 
     public MyServer(String serverName, int port, MyDatabase db) {
         this.serverName = serverName;
         this.port = port;
         this.db = db;
+        this.httpClient = new HttpClient(new NetHttpTransport().createRequestFactory());
+        this.msgSender = new DirectMsgSender(httpClient);
     }
 
     public void run() {
@@ -34,13 +40,14 @@ public class MyServer {
             server.createContext("/", new RootHandler());
             server.createContext("/echo", new EchoHandler());
             server.createContext("/register", new RegisterHandler(db));
-            server.createContext("/logon", new LogOnHandler(db));
+            server.createContext("/logon", new LogOnHandler(db, msgSender));
             server.createContext("/logoff", new LogOffHandler(db));
+            server.createContext("/p2pMessage", new P2PMsgHandler(db, httpClient, msgSender));
             server.setExecutor(null);
             server.start();
             logger.info("Server started at port {}", port);
         } catch (IOException e) {
-            logger.fatal("Caught exception during server startup: {}", e);
+            logger.fatal("Caught exception during server startup: {}", e.getMessage());
         }
     }
 

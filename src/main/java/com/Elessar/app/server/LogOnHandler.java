@@ -3,6 +3,7 @@ package com.Elessar.app.server;
 import com.Elessar.database.MyDatabase;
 import com.Elessar.proto.Logon.LogonResponse;
 import com.Elessar.proto.Logon.LogonRequest;
+import com.Elessar.proto.P2Pmsg.P2PMsgResponse;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.apache.logging.log4j.LogManager;
@@ -10,6 +11,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
 
 
 /**
@@ -18,8 +20,10 @@ import java.io.OutputStream;
 public class LogOnHandler implements HttpHandler {
     private static final Logger logger = LogManager.getLogger(LogOnHandler.class);
     private final MyDatabase db;
-    public LogOnHandler(MyDatabase db) {
+    private final MsgSender msgSender;
+    public LogOnHandler(MyDatabase db, MsgSender msgSender) {
         this.db = db;
+        this.msgSender = msgSender;
     }
 
     @Override
@@ -40,21 +44,42 @@ public class LogOnHandler implements HttpHandler {
             final LogonRequest logonRequest = LogonRequest.parseFrom(is);
             final LogonResponse.Builder logonResponse = LogonResponse.newBuilder();
             final String userName = logonRequest.getName();
-            final String password = logonRequest.getPassword();
+            final StringBuilder clientURL = new StringBuilder().append("http://")
+                                                               .append(he.getRemoteAddress().getAddress().getHostAddress())
+                                                               .append(":")
+                                                               .append(logonRequest.getPort());
 
-            final User prevUser = db.update(new User(userName, password, null, null, true));
+            final User prevUser = db.update(new User(userName, logonRequest.getPassword(), null, null, clientURL.toString(), true));
+
             if (prevUser == null) {
                 logger.info("User {} and password combination does NOT exist !", userName);
                 logonResponse.setSuccess(false).setFailReason("User " + userName + " password combination does NOT exist !");
                 he.sendResponseHeaders(400, 0);
             } else if (prevUser.getOnline()) {
                 logger.info("User {} has already log on !", userName);
-                logonResponse.setSuccess(false).setFailReason("User " + userName + " has already log on !");
-                he.sendResponseHeaders(400, 0);
+                logonResponse.setSuccess(true);
+                he.sendResponseHeaders(200, 0);
             } else {
                 logger.info("User {} successfully log on !", userName);
                 logonResponse.setSuccess(true);
-                he.sendResponseHeaders(200, 0);
+                he.sendResponseHeaders(200, 0); //2nd arg = 0 means chunked encoding is used, an arbitrary number of bytes may be written
+
+                // Get the list of unread messages sent to user
+                List<Message> messages = db.find(new Message(null, userName, null, null, false));
+
+                try {
+                    P2PMsgResponse p2pMsgResponse = msgSender.send(messages, clientURL.toString());
+
+                    if (p2pMsgResponse.getSuccess() && p2pMsgResponse.getIsDelivered()) {
+                        db.update(messages, new Message(null, null, null, null, true));
+                    } else {
+                        logger.info("Fail to send unread messages to {} during log on because {}", userName, p2pMsgResponse.getFailReason());
+                    }
+
+                } catch (Exception e) {
+                    logger.error("Caught exception when sending messages during log on: {}", e.getMessage());
+                }
+
             }
 
             try (final OutputStream os = he.getResponseBody()) {

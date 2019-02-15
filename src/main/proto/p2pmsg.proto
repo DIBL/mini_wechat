@@ -1,0 +1,22 @@
+syntax = "proto2";
+
+package proto;
+
+option java_package = "com.Elessar.proto";
+
+message P2PMsgRequest {
+  required string from_user = 1;
+  required string to_user = 2;
+  repeated Message message = 3;
+}
+
+message P2PMsgResponse {
+  required bool success = 1;
+  required bool isDelivered = 2;
+  optional string failReason = 3;
+}
+
+message Message {
+  required string text = 1;
+  required int64 timestamp = 2;
+}
