@@ -1,6 +1,8 @@
 package com.Elessar.app.server;
 
-import com.Elessar.app.client.HttpClient;
+import com.Elessar.app.util.HttpClient;
+import com.Elessar.app.util.Metric;
+import com.Elessar.app.util.MetricManager;
 import com.Elessar.database.MyDatabase;
 import com.Elessar.proto.P2Pmsg;
 import com.Elessar.proto.P2Pmsg.P2PMsgRequest;
@@ -24,14 +26,20 @@ public class P2PMsgHandler implements HttpHandler {
     private final MyDatabase db;
     private final HttpClient httpClient;
     private final MsgSender msgSender;
-    public P2PMsgHandler(MyDatabase db, HttpClient httpClient, MsgSender msgSender) {
+    private final MetricManager metricManager;
+
+    public P2PMsgHandler(MyDatabase db, HttpClient httpClient, MsgSender msgSender, MetricManager metricManager) {
         this.db = db;
         this.httpClient = httpClient;
         this.msgSender = msgSender;
+        this.metricManager = metricManager;
     }
 
     @Override
     public void handle(HttpExchange he) throws IOException {
+        final Metric metric = new Metric(metricManager, new StringBuilder().append(MyServer.SERVER).append(".")
+                                                                           .append(MyServer.P2P_MSG).toString());
+
         final String requestType = he.getRequestMethod();
         // Only handle POST request
         if (!"POST".equals(requestType)) {
@@ -42,6 +50,12 @@ public class P2PMsgHandler implements HttpHandler {
                 os.write(response.getBytes());
             }
             return;
+        }
+
+        try {
+            metric.timerStart();
+        } catch (Exception e) {
+            logger.debug("Caught exception when trying to start timer during handle p2p message request: {}", e.getMessage());
         }
 
         try (final InputStream is = he.getRequestBody()) {
@@ -101,6 +115,12 @@ public class P2PMsgHandler implements HttpHandler {
             try (final OutputStream os = he.getResponseBody()) {
                 p2pMsgResponse.build().writeTo(os);
             }
+        }
+
+        try {
+            metric.timerStop();
+        } catch (Exception e) {
+            logger.debug("Caught exception when trying to stop timer during handle p2p message request: {}", e.getMessage());
         }
     }
 }

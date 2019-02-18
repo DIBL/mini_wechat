@@ -1,5 +1,7 @@
 package com.Elessar.app.server;
 
+import com.Elessar.app.util.Metric;
+import com.Elessar.app.util.MetricManager;
 import com.Elessar.database.MyDatabase;
 import com.Elessar.proto.Logon.LogonResponse;
 import com.Elessar.proto.Logon.LogonRequest;
@@ -21,13 +23,19 @@ public class LogOnHandler implements HttpHandler {
     private static final Logger logger = LogManager.getLogger(LogOnHandler.class);
     private final MyDatabase db;
     private final MsgSender msgSender;
-    public LogOnHandler(MyDatabase db, MsgSender msgSender) {
+    private final MetricManager metricManager;
+
+    public LogOnHandler(MyDatabase db, MsgSender msgSender, MetricManager metricManager) {
         this.db = db;
         this.msgSender = msgSender;
+        this.metricManager = metricManager;
     }
 
     @Override
     public void handle(HttpExchange he) throws IOException {
+        final Metric metric = new Metric(metricManager, new StringBuilder().append(MyServer.SERVER).append(".")
+                                                                           .append(MyServer.LOGON).toString());
+
         final String requestType = he.getRequestMethod();
         // Only handle POST request
         if (!"POST".equals(requestType)) {
@@ -40,16 +48,22 @@ public class LogOnHandler implements HttpHandler {
             return ;
         }
 
+        try {
+            metric.timerStart();
+        } catch (Exception e) {
+            logger.debug("Caught exception when trying to start timer during handle log on request: {}", e.getMessage());
+        }
+
         try (final InputStream is = he.getRequestBody()) {
             final LogonRequest logonRequest = LogonRequest.parseFrom(is);
             final LogonResponse.Builder logonResponse = LogonResponse.newBuilder();
             final String userName = logonRequest.getName();
-            final StringBuilder clientURL = new StringBuilder().append("http://")
+            final String clientURL = new StringBuilder().append("http://")
                                                                .append(he.getRemoteAddress().getAddress().getHostAddress())
                                                                .append(":")
-                                                               .append(logonRequest.getPort());
+                                                               .append(logonRequest.getPort()).toString();
 
-            final User prevUser = db.update(new User(userName, logonRequest.getPassword(), null, null, clientURL.toString(), true));
+            final User prevUser = db.update(new User(userName, logonRequest.getPassword(), null, null, clientURL, true));
 
             if (prevUser == null) {
                 logger.info("User {} and password combination does NOT exist !", userName);
@@ -66,26 +80,37 @@ public class LogOnHandler implements HttpHandler {
 
                 // Get the list of unread messages sent to user
                 List<Message> messages = db.find(new Message(null, userName, null, null, false));
-
-                try {
-                    P2PMsgResponse p2pMsgResponse = msgSender.send(messages, clientURL.toString());
-
-                    if (p2pMsgResponse.getSuccess() && p2pMsgResponse.getIsDelivered()) {
-                        db.update(messages, new Message(null, null, null, null, true));
-                    } else {
-                        logger.info("Fail to send unread messages to {} during log on because {}", userName, p2pMsgResponse.getFailReason());
-                    }
-
-                } catch (Exception e) {
-                    logger.error("Caught exception when sending messages during log on: {}", e.getMessage());
-                }
-
+                sendMessages(messages, clientURL);
             }
 
             try (final OutputStream os = he.getResponseBody()) {
                 logonResponse.build().writeTo(os);
             }
         }
+
+        try {
+            metric.timerStop();
+        } catch (Exception e) {
+            logger.debug("Caught exception when trying to stop timer during handle log on request: {}", e.getMessage());
+        }
     }
 
+    private void sendMessages(List<Message> messages, String clientURL) {
+        if (messages.isEmpty()) {
+            return;
+        }
+
+        try {
+            P2PMsgResponse p2pMsgResponse = msgSender.send(messages, clientURL);
+
+            if (p2pMsgResponse.getSuccess() && p2pMsgResponse.getIsDelivered()) {
+                db.update(messages, new Message(null, null, null, null, true));
+            } else {
+                logger.info("Fail to retrieve unread messages during log on because {}", p2pMsgResponse.getFailReason());
+            }
+
+        } catch (Exception e) {
+            logger.error("Caught exception when sending messages during log on: {}", e.getMessage());
+        }
+    }
 }

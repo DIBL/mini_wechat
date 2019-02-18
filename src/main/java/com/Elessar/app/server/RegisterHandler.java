@@ -1,5 +1,7 @@
 package com.Elessar.app.server;
 
+import com.Elessar.app.util.Metric;
+import com.Elessar.app.util.MetricManager;
 import com.Elessar.database.MyDatabase;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -19,13 +21,18 @@ import java.io.OutputStream;
 public class RegisterHandler implements HttpHandler {
     private static final Logger logger = LogManager.getLogger(RegisterHandler.class);
     private final MyDatabase db;
+    private final MetricManager metricManager;
 
-    public RegisterHandler(MyDatabase db) {
+    public RegisterHandler(MyDatabase db, MetricManager metricManager) {
         this.db = db;
+        this.metricManager = metricManager;
     }
 
     @Override
     public void handle(HttpExchange he) throws IOException {
+        final Metric metric = new Metric(metricManager, new StringBuilder().append(MyServer.SERVER).append(".")
+                                                                           .append(MyServer.REGISTER).toString());
+
         final String requestType = he.getRequestMethod();
         // Only handle POST request
         if (!"POST".equals(requestType)) {
@@ -36,6 +43,12 @@ public class RegisterHandler implements HttpHandler {
                 os.write(response.getBytes());
             }
             return ;
+        }
+
+        try {
+            metric.timerStart();
+        } catch (Exception e) {
+            logger.debug("Caught exception when trying to start timer during handle register request: {}", e.getMessage());
         }
 
         try (final InputStream is = he.getRequestBody()) {
@@ -61,6 +74,12 @@ public class RegisterHandler implements HttpHandler {
             try (final OutputStream os = he.getResponseBody()){
                 regResponse.build().writeTo(os);
             }
+        }
+
+        try {
+            metric.timerStop();
+        } catch (Exception e) {
+            logger.debug("Caught exception when trying to stop timer during handle register request: {}", e.getMessage());
         }
     }
 }

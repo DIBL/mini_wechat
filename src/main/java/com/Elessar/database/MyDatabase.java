@@ -8,7 +8,7 @@ import java.util.List;
  * Created by Hans on 1/20/19.
  */
 public interface MyDatabase {
-    String USERS = "users", MESSAGES = "messages";
+    String Database = "db", USERS = "users", MESSAGES = "messages", INSERT = "insert", FIND = "find", UPDATE = "update";
 
     /**
      * Insert list of messages into database

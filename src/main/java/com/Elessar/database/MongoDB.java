@@ -2,8 +2,12 @@ package com.Elessar.database;
 
 import com.Elessar.app.server.Message;
 import com.Elessar.app.server.User;
+import com.Elessar.app.util.Metric;
+import com.Elessar.app.util.MetricManager;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bson.BsonDocument;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -17,54 +21,133 @@ import static com.mongodb.client.model.Filters.or;
  * Created by Hans on 1/20/19.
  */
 public class MongoDB implements MyDatabase{
+    private static final Logger logger = LogManager.getLogger(MongoDB.class);
     private final MongoDatabase db;
-    public MongoDB(MongoDatabase db) {
+    private final MetricManager metricManager;
+
+    public MongoDB(MongoDatabase db, MetricManager metricManager) {
         this.db = db;
+        this.metricManager = metricManager;
     }
 
     @Override
     public void insert(List<Message> messages) {
+        final Metric metric = new Metric(metricManager, new StringBuilder().append(MyDatabase.Database).append(".")
+                                                                           .append(MyDatabase.MESSAGES).append(".")
+                                                                           .append(MyDatabase.INSERT).append("Many").toString());
+        try {
+            metric.timerStart();
+        } catch (Exception e) {
+            logger.debug("Caught exception when trying to start timer during insert message list: {}", e.getMessage());
+        }
+
         final List<Document> docs = new ArrayList<>();
         for (Message message : messages) {
             docs.add(msgToDoc(message));
         }
         db.getCollection(MyDatabase.MESSAGES).insertMany(docs);
+
+        try {
+            metric.timerStop();
+        } catch (Exception e) {
+            logger.debug("Caught exception when trying to stop timer during insert message list: {}", e.getMessage());
+        }
     }
 
     @Override
     public void insert(Message message) {
-         final Document doc = msgToDoc(message);
-         db.getCollection(MyDatabase.MESSAGES).insertOne(doc);
+        final Metric metric = new Metric(metricManager, new StringBuilder().append(MyDatabase.Database).append(".")
+                                                                           .append(MyDatabase.MESSAGES).append(".")
+                                                                           .append(MyDatabase.INSERT).append("One").toString());
+        try {
+            metric.timerStart();
+        } catch (Exception e) {
+            logger.debug("Caught exception when trying to start timer during insert single message: {}", e.getMessage());
+        }
+
+        final Document doc = msgToDoc(message);
+        db.getCollection(MyDatabase.MESSAGES).insertOne(doc);
+
+        try {
+            metric.timerStop();
+        } catch (Exception e) {
+            logger.debug("Caught exception when trying to stop timer during insert single message: {}", e.getMessage());
+        }
     }
 
     @Override
     public void insert(User user) {
+        final Metric metric = new Metric(metricManager, new StringBuilder().append(MyDatabase.Database).append(".")
+                                                                           .append(MyDatabase.USERS).append(".")
+                                                                           .append(MyDatabase.INSERT).append("One").toString());
+        try {
+            metric.timerStart();
+        } catch (Exception e) {
+            logger.debug("Caught exception when trying to start timer during insert single user: {}", e.getMessage());
+        }
+
         final Document doc = userToDoc(user);
         db.getCollection(MyDatabase.USERS).insertOne(doc);
+
+        try {
+            metric.timerStop();
+        } catch (Exception e) {
+            logger.debug("Caught exception when trying to stop timer during insert single user: {}", e.getMessage());
+        }
     }
 
     @Override
     public List<Message> find(Message filter) {
+        final Metric metric = new Metric(metricManager, new StringBuilder().append(MyDatabase.Database).append(".")
+                                                                           .append(MyDatabase.MESSAGES).append(".")
+                                                                           .append(MyDatabase.FIND).toString());
+        try {
+            metric.timerStart();
+        } catch (Exception e) {
+            logger.debug("Caught exception when trying to start timer during find messages: {}", e.getMessage());
+        }
+
         final List<Message> findResult = new ArrayList<>();
         try (MongoCursor<Document> cursor = db.getCollection(MyDatabase.MESSAGES).find(msgToBson(filter)).iterator()) {
             while (cursor.hasNext()) {
                 findResult.add(docToMsg(cursor.next()));
             }
         }
-        return findResult;
 
+        try {
+            metric.timerStop();
+        } catch (Exception e) {
+            logger.debug("Caught exception when trying to stop timer during find messages: {}", e.getMessage());
+        }
+
+        return findResult;
     }
 
     @Override
     public List<User> find(User filter) {
+        final Metric metric = new Metric(metricManager, new StringBuilder().append(MyDatabase.Database).append(".")
+                                                                           .append(MyDatabase.USERS).append(".")
+                                                                           .append(MyDatabase.FIND).toString());
+        try {
+            metric.timerStart();
+        } catch (Exception e) {
+            logger.debug("Caught exception when trying to start timer during find users: {}", e.getMessage());
+        }
+
         final List<User> findResult = new ArrayList<>();
         try (MongoCursor<Document> cursor = db.getCollection(MyDatabase.USERS).find(userToBson(filter)).iterator()) {
             while (cursor.hasNext()) {
                 findResult.add(docToUser(cursor.next()));
             }
         }
-        return findResult;
 
+        try {
+            metric.timerStop();
+        } catch (Exception e) {
+            logger.debug("Caught exception when trying to stop timer during find users: {}", e.getMessage());
+        }
+
+        return findResult;
     }
 
     @Deprecated
@@ -77,22 +160,70 @@ public class MongoDB implements MyDatabase{
 
     @Override
     public void update(List<Message> filters, Message update) {
+        final Metric metric = new Metric(metricManager, new StringBuilder().append(MyDatabase.Database).append(".")
+                                                                           .append(MyDatabase.MESSAGES).append(".")
+                                                                           .append(MyDatabase.UPDATE).toString());
+        try {
+            metric.timerStart();
+        } catch (Exception e) {
+            logger.debug("Caught exception when trying to start timer during update messages: {}", e.getMessage());
+        }
+
         db.getCollection(MyDatabase.MESSAGES).updateMany(msgsToBson(filters), new Document("$set", msgToDoc(update)));
+
+        try {
+            metric.timerStop();
+        } catch (Exception e) {
+            logger.debug("Caught exception when trying to stop timer during update messages: {}", e.getMessage());
+        }
     }
 
     @Override
     public void update(Message filter, Message update) {
+        final Metric metric = new Metric(metricManager, new StringBuilder().append(MyDatabase.Database).append(".")
+                                                                           .append(MyDatabase.MESSAGES).append(".")
+                                                                           .append(MyDatabase.UPDATE).toString());
+        try {
+            metric.timerStart();
+        } catch (Exception e) {
+            logger.debug("Caught exception when trying to start timer during update messages: {}", e.getMessage());
+        }
+
         db.getCollection(MyDatabase.MESSAGES).updateMany(msgToBson(filter), new Document("$set", msgToDoc(update)));
+
+        try {
+            metric.timerStop();
+        } catch (Exception e) {
+            logger.debug("Caught exception when trying to stop timer during update messages: {}", e.getMessage());
+        }
     }
 
     @Override
     public User update(User user) {
+        final Metric metric = new Metric(metricManager, new StringBuilder().append(MyDatabase.Database).append(".")
+                                                                           .append(MyDatabase.USERS).append(".")
+                                                                           .append(MyDatabase.UPDATE).toString());
+        try {
+            metric.timerStart();
+        } catch (Exception e) {
+            logger.debug("Caught exception when trying to start timer during update users: {}", e.getMessage());
+        }
+
         Bson filter = eq(User.NAME, user.getName());
+
         if (user.getPassword() != null) {
             filter = and(filter, eq(User.PASSWORD, user.getPassword()));
         }
-        User update = new User(null, null, user.getEmail(), user.getPhoneNumber(), user.getURL(), user.getOnline());
+
+        final User update = new User(null, null, user.getEmail(), user.getPhoneNumber(), user.getURL(), user.getOnline());
         final Document prevUserDoc = db.getCollection(MyDatabase.USERS).findOneAndUpdate(filter, new Document("$set", userToDoc(update)));
+
+        try {
+            metric.timerStop();
+        } catch (Exception e) {
+            logger.debug("Caught exception when trying to stop timer during update users: {}", e.getMessage());
+        }
+
         return docToUser(prevUserDoc);
     }
 

@@ -1,4 +1,4 @@
-package com.Elessar.app.client;
+package com.Elessar.app.util;
 
 import com.google.api.client.http.*;
 import com.google.api.client.http.protobuf.ProtoHttpContent;

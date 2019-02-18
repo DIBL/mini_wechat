@@ -2,6 +2,7 @@ package com.Elessar.app;
 
 import com.Elessar.app.client.MyClient;
 import com.Elessar.app.client.MyClientServer;
+import com.Elessar.app.util.MetricManager;
 import com.Elessar.proto.Logoff.LogoffResponse;
 import com.Elessar.proto.Logon.LogonResponse;
 import com.Elessar.proto.P2Pmsg.P2PMsgResponse;
@@ -28,7 +29,7 @@ public class ClientMain {
      * @param args [0] server address, [1] server port number, [2] client port number
      */
     public static void main(String[] args){
-
+        final MetricManager metricManager = new MetricManager("ClientMetric", 0);
         final BlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
 
         final String serverAddress = args[0];
@@ -36,11 +37,12 @@ public class ClientMain {
         final int clientPort = Integer.valueOf(args[2]);
 
 
-        final StringBuilder serverURL = new StringBuilder();
-        serverURL.append("http://").append(serverAddress).append(":").append(serverPort);
+        final String serverURL = new StringBuilder().append("http://")
+                                                           .append(serverAddress).append(":")
+                                                           .append(serverPort).toString();
 
-        final MyClient client = new MyClient(serverURL.toString());
-        final MyClientServer clientServer = new MyClientServer("localhost", clientPort, messageQueue);
+        final MyClient client = new MyClient(serverURL, metricManager);
+        final MyClientServer clientServer = new MyClientServer("localhost", clientPort, messageQueue, metricManager);
 
         clientServer.run();
 

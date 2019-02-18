@@ -1,6 +1,7 @@
 package com.Elessar.app;
 
 import com.Elessar.app.server.MyServer;
+import com.Elessar.app.util.MetricManager;
 import com.Elessar.database.MongoDB;
 import com.Elessar.database.MyDatabase;
 import com.example.tutorial.Addressbook.Person;
@@ -19,8 +20,9 @@ public class Main {
     public static void main(String[] args){
         Logger mongoLogger = Logger.getLogger( "org.mongodb.driver" );
         mongoLogger.setLevel(Level.SEVERE); // e.g. or Log.WARNING, etc.
-        MyDatabase db = new MongoDB(MongoClients.create("mongodb://localhost:27017").getDatabase("myDB"));
-        final MyServer server = new MyServer("localhost", 9000, db);
+        final MetricManager metricManager = new MetricManager("ServerMetric", 0);
+        final MyDatabase db = new MongoDB(MongoClients.create("mongodb://localhost:27017").getDatabase("myDB"), metricManager);
+        final MyServer server = new MyServer("localhost", 9000, db, metricManager);
         server.run();
         //testProtoBuf();
     }
