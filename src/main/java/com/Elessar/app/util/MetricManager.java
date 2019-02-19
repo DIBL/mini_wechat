@@ -3,8 +3,8 @@ package com.Elessar.app.util;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -13,35 +13,39 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class MetricManager {
     private final Logger logger;
-    private final Map<String, Duration> operationDuration;
+    private final Set<Metric> metrics;
     private final int maxEntryCount;
     private final Lock lock;
 
 
     public MetricManager(String name, int maxEntryCount) {
         logger = LogManager.getLogger(name);
-        this.operationDuration = new HashMap<>();
+        this.metrics = new HashSet<>();
         this.maxEntryCount = maxEntryCount;
         this.lock = new ReentrantLock();
     }
 
-    public void add(String op, Duration duration) {
+    public Metric newMetric(String operation) {
+        return new Metric(this, operation);
+    }
+
+    public void add(Metric m) {
         lock.lock();
         try {
-            operationDuration.put(op, duration);
-            if (operationDuration.size() > maxEntryCount) {
-                writeToFile();
+            metrics.add(m);
+            if (metrics.size() > maxEntryCount) {
+                dumpToFile();
             }
         } finally {
             lock.unlock();
         }
     }
 
-    private void writeToFile() {
-        for (Map.Entry<String, Duration> entry : operationDuration.entrySet()) {
-            logger.info("Ignored", entry.getKey(), entry.getValue().getTimestamp(), entry.getValue().getDuration());
+    private void dumpToFile() {
+        for (Metric m : metrics) {
+            logger.info("Ignored", m.getOperation(), m.getStartTime().toEpochMilli(), m.getDuration().toMillis());
         }
 
-        operationDuration.clear();
+        metrics.clear();
     }
 }

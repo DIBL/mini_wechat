@@ -37,7 +37,7 @@ public class P2PMsgHandler implements HttpHandler {
 
     @Override
     public void handle(HttpExchange he) throws IOException {
-        final Metric metric = new Metric(metricManager, new StringBuilder().append(MyServer.SERVER).append(".")
+        final Metric metric = metricManager.newMetric(new StringBuilder().append(MyServer.SERVER).append(".")
                                                                            .append(MyServer.P2P_MSG).toString());
 
         final String requestType = he.getRequestMethod();
@@ -50,12 +50,6 @@ public class P2PMsgHandler implements HttpHandler {
                 os.write(response.getBytes());
             }
             return;
-        }
-
-        try {
-            metric.timerStart();
-        } catch (Exception e) {
-            logger.debug("Caught exception when trying to start timer during handle p2p message request: {}", e.getMessage());
         }
 
         try (final InputStream is = he.getRequestBody()) {
@@ -117,10 +111,6 @@ public class P2PMsgHandler implements HttpHandler {
             }
         }
 
-        try {
-            metric.timerStop();
-        } catch (Exception e) {
-            logger.debug("Caught exception when trying to stop timer during handle p2p message request: {}", e.getMessage());
-        }
+        metric.timerStop();
     }
 }

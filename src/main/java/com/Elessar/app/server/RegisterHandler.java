@@ -30,7 +30,7 @@ public class RegisterHandler implements HttpHandler {
 
     @Override
     public void handle(HttpExchange he) throws IOException {
-        final Metric metric = new Metric(metricManager, new StringBuilder().append(MyServer.SERVER).append(".")
+        final Metric metric = metricManager.newMetric(new StringBuilder().append(MyServer.SERVER).append(".")
                                                                            .append(MyServer.REGISTER).toString());
 
         final String requestType = he.getRequestMethod();
@@ -43,12 +43,6 @@ public class RegisterHandler implements HttpHandler {
                 os.write(response.getBytes());
             }
             return ;
-        }
-
-        try {
-            metric.timerStart();
-        } catch (Exception e) {
-            logger.debug("Caught exception when trying to start timer during handle register request: {}", e.getMessage());
         }
 
         try (final InputStream is = he.getRequestBody()) {
@@ -76,10 +70,6 @@ public class RegisterHandler implements HttpHandler {
             }
         }
 
-        try {
-            metric.timerStop();
-        } catch (Exception e) {
-            logger.debug("Caught exception when trying to stop timer during handle register request: {}", e.getMessage());
-        }
+        metric.timerStop();
     }
 }

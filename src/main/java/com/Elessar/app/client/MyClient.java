@@ -40,14 +40,8 @@ public class MyClient {
     public P2PMsgResponse sendMessage (String fromUser,
                                        String toUser,
                                        String text) throws Exception {
-        final Metric metric = new Metric(metricManager, new StringBuilder().append(CLIENT).append(".")
+        final Metric metric = metricManager.newMetric(new StringBuilder().append(CLIENT).append(".")
                                                                            .append(P2P_MSG).toString());
-
-        try {
-            metric.timerStart();
-        } catch (Exception e) {
-            logger.debug("Caught exception when trying to start timer during sending message: {}", e.getMessage());
-        }
 
         final P2PMsgRequest.Builder sendMsgRequest = P2PMsgRequest.newBuilder().setFromUser(fromUser)
                                                                                .setToUser(toUser)
@@ -57,11 +51,7 @@ public class MyClient {
 
         final HttpResponse response = httpClient.post(new URL(hostURL + "/p2pMessage"), sendMsgRequest.build());
 
-        try {
-            metric.timerStop();
-        } catch (Exception e) {
-            logger.debug("Caught exception when trying to stop timer during sending message: {}", e.getMessage());
-        }
+        metric.timerStop();
 
         return P2PMsgResponse.parseFrom(response.getContent());
     }
@@ -70,13 +60,8 @@ public class MyClient {
     public LogonResponse logOn(String userName,
                                String password,
                                int clientPort) throws Exception {
-        final Metric metric = new Metric(metricManager, new StringBuilder().append(CLIENT).append(".")
+        final Metric metric = metricManager.newMetric(new StringBuilder().append(CLIENT).append(".")
                                                                            .append(LOGON).toString());
-        try {
-            metric.timerStart();
-        } catch (Exception e) {
-            logger.debug("Caught exception when trying to start timer during log on: {}", e.getMessage());
-        }
 
         final LogonRequest.Builder logonRequest = LogonRequest.newBuilder().setName(userName)
                                                                            .setPassword(hash(password))
@@ -84,34 +69,21 @@ public class MyClient {
 
         final HttpResponse response = httpClient.post(new URL(hostURL + "/logon"), logonRequest.build());
 
-        try {
-            metric.timerStop();
-        } catch (Exception e) {
-            logger.debug("Caught exception when trying to stop timer during log on: {}", e.getMessage());
-        }
+        metric.timerStop();
 
         return LogonResponse.parseFrom(response.getContent());
     }
 
 
     public LogoffResponse logOff(String userName) throws Exception {
-        final Metric metric = new Metric(metricManager, new StringBuilder().append(CLIENT).append(".")
+        final Metric metric = metricManager.newMetric(new StringBuilder().append(CLIENT).append(".")
                                                                            .append(LOGOFF).toString());
-        try {
-            metric.timerStart();
-        } catch (Exception e) {
-            logger.debug("Caught exception when trying to start timer during log off: {}", e.getMessage());
-        }
 
         final LogoffRequest.Builder logoffRequest= LogoffRequest.newBuilder().setName(userName);
 
         final HttpResponse response = httpClient.post(new URL(hostURL + "/logoff"), logoffRequest.build());
 
-        try {
-            metric.timerStop();
-        } catch (Exception e) {
-            logger.debug("Caught exception when trying to stop timer during log off: {}", e.getMessage());
-        }
+        metric.timerStop();
 
         return LogoffResponse.parseFrom(response.getContent());
     }
@@ -121,14 +93,8 @@ public class MyClient {
                                           String password,
                                           String email,
                                           String phoneNumber) throws Exception {
-        final Metric metric = new Metric(metricManager, new StringBuilder().append(CLIENT).append(".")
+        final Metric metric = metricManager.newMetric(new StringBuilder().append(CLIENT).append(".")
                                                                            .append(REGISTER).toString());
-
-        try {
-            metric.timerStart();
-        } catch (Exception e) {
-            logger.debug("Caught exception when trying to start timer during register: {}", e.getMessage());
-        }
 
         final RegistrationRequest.Builder registerRequest = RegistrationRequest.newBuilder().setName(userName)
                                                                                             .setPassword(hash(password))
@@ -137,11 +103,7 @@ public class MyClient {
 
         final HttpResponse response = httpClient.post(new URL(hostURL + "/register"), registerRequest.build());
 
-        try {
-            metric.timerStop();
-        } catch (Exception e) {
-            logger.debug("Caught exception when trying to stop timer during register: {}", e.getMessage());
-        }
+        metric.timerStop();
 
         return RegistrationResponse.parseFrom(response.getContent());
     }

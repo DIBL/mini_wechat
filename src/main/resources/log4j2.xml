@@ -5,7 +5,7 @@
     <Property name="file-header"></Property>
   </Properties>
   <Appenders>
-    <RollingFile name="csvFileServer"
+    <RollingFile name="metricFileServer"
                  fileName="logs/${csvLog.fileName}-Server.log"
                  filePattern="logs/${csvLog.fileName}-Server-%d{yyyy-MM-dd-HH}.gz" >
       <CsvParameterLayout delimiter="," header="${file-header}"/>
@@ -15,7 +15,7 @@
       <DefaultRolloverStrategy/>
     </RollingFile>
 
-    <RollingFile name="csvFileClient"
+    <RollingFile name="metricFileClient"
                  fileName="logs/${csvLog.fileName}-Client.log"
                  filePattern="logs/${csvLog.fileName}-Client-%d{yyyy-MM-dd-HH}.gz" >
       <CsvParameterLayout delimiter="," header="${file-header}"/>
@@ -31,10 +31,10 @@
   </Appenders>
   <Loggers>
     <Logger name="ClientMetric" level="info" additivity="false">
-      <AppenderRef ref="csvFileClient"/>
+      <AppenderRef ref="metricFileClient"/>
     </Logger>
     <Logger name="ServerMetric" level="info" additivity="false">
-      <AppenderRef ref="csvFileServer"/>
+      <AppenderRef ref="metricFileServer"/>
     </Logger>
     <Logger name="com.Elessar.app" level="info" additivity="false">
       <AppenderRef ref="Console"/>

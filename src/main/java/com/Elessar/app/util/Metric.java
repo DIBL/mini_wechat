@@ -1,35 +1,38 @@
 package com.Elessar.app.util;
 
+import java.time.Duration;
+import java.time.Instant;
+
 /**
  * Created by Hans on 2/16/19.
  */
 public class Metric {
     private final MetricManager metricManager;
-    private long startTime;
+    private Instant startTime;
+    private Duration duration;
     private String operation;
 
     public Metric(MetricManager metricManager, String operation) {
         this.metricManager = metricManager;
         this.operation = operation;
-        this.startTime = 0;
+        this.startTime = Instant.now();
     }
 
-    public void timerStart() throws Exception {
-        if (startTime != 0) {
-            throw new Exception("Timer already starts for this operation");
-        }
 
-        startTime = System.currentTimeMillis();
+    public void timerStop() {
+        duration = Duration.between(startTime, Instant.now());
+        metricManager.add(this);
     }
 
-    public void timerStop() throws Exception {
-        if (startTime == 0) {
-            throw new Exception("Timer has NOT started for this operation");
-        }
-
-        long duration = System.currentTimeMillis() - startTime;
-        metricManager.add(operation, new Duration(startTime, duration));
-        startTime = 0;
+    public String getOperation() {
+        return operation;
     }
 
+    public Duration getDuration() {
+        return duration;
+    }
+
+    public Instant getStartTime() {
+        return startTime;
+    }
 }
