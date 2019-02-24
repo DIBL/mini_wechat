@@ -1,5 +1,7 @@
 package com.Elessar.app.server;
 
+import com.Elessar.app.util.Metric;
+import com.Elessar.app.util.MetricManager;
 import com.Elessar.database.MyDatabase;
 import com.Elessar.proto.Logoff.LogoffResponse;
 import com.Elessar.proto.Logoff.LogoffRequest;
@@ -7,6 +9,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -18,13 +21,18 @@ import java.io.OutputStream;
 public class LogOffHandler implements HttpHandler {
     private static final Logger logger = LogManager.getLogger(LogOffHandler.class);
     private final MyDatabase db;
+    private final MetricManager metricManager;
 
-    public LogOffHandler(MyDatabase db) {
+    public LogOffHandler(MyDatabase db, MetricManager metricManager) {
         this.db = db;
+        this.metricManager = metricManager;
     }
 
     @Override
     public void handle(HttpExchange he) throws IOException {
+        final Metric metric  = metricManager.newMetric(new StringBuilder().append(MyServer.SERVER).append(".")
+                                                                            .append(MyServer.LOGOFF).toString());
+
         final String requestType = he.getRequestMethod();
         // Only handle POST request
         if (!"POST".equals(requestType)) {
@@ -61,6 +69,8 @@ public class LogOffHandler implements HttpHandler {
                 logoffResponse.build().writeTo(os);
             }
         }
+
+        metric.timerStop();
     }
 
 }

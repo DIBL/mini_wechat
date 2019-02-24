@@ -1,5 +1,7 @@
 package com.Elessar.app.client;
 
+import com.Elessar.app.util.Metric;
+import com.Elessar.app.util.MetricManager;
 import com.Elessar.proto.P2Pmsg.P2PMsgRequest;
 import com.Elessar.proto.P2Pmsg.P2PMsgResponse;
 import com.sun.net.httpserver.HttpExchange;
@@ -18,21 +20,24 @@ import java.util.concurrent.BlockingQueue;
  * Created by Hans on 2/1/19.
  */
 public class MyClientServer {
+    private static final String CLIENT_SERVER = "clientServer", P2P_MSG = "p2pMsg";
     private static final Logger logger = LogManager.getLogger(MyClientServer.class);
     private final String serverName;
     private final int port;
     private final BlockingQueue<String> messageQueue;
+    private final MetricManager metricManager;
 
-    public MyClientServer(String serverName, int port, BlockingQueue<String> messageQueue) {
+    public MyClientServer(String serverName, int port, BlockingQueue<String> messageQueue, MetricManager metricManager) {
         this.serverName = serverName;
         this.port = port;
         this.messageQueue = messageQueue;
+        this.metricManager = metricManager;
     }
 
     public void run() {
         try {
             final HttpServer server = HttpServer.create(new InetSocketAddress(serverName, port), 0);
-            server.createContext("/p2pMessage", new P2PMsgHandler(messageQueue));
+            server.createContext("/p2pMessage", new P2PMsgHandler(messageQueue, metricManager));
             server.setExecutor(null);
             server.start();
             logger.info("Client Server started at port {}", port);
@@ -42,14 +47,19 @@ public class MyClientServer {
     }
 
     private static class P2PMsgHandler implements HttpHandler {
+        private MetricManager metricManager;
         private BlockingQueue<String> messageQueue;
 
-        public P2PMsgHandler (BlockingQueue<String> messageQueue) {
+        public P2PMsgHandler (BlockingQueue<String> messageQueue, MetricManager metricManager) {
             this.messageQueue = messageQueue;
+            this.metricManager = metricManager;
         }
 
         @Override
         public void handle(HttpExchange he) throws IOException {
+            final Metric metric = metricManager.newMetric(new StringBuilder().append(CLIENT_SERVER).append(".")
+                                                                               .append(P2P_MSG).toString());
+
             final String requestType = he.getRequestMethod();
             // Only handle POST request
             if (!"POST".equals(requestType)) {
@@ -85,6 +95,8 @@ public class MyClientServer {
                     p2pMsgResponse.build().writeTo(os);
                 }
             }
+
+            metric.timerStop();
         }
     }
 }

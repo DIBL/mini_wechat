@@ -1,11 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN">
+  <Properties>
+    <Property name="csvLog.fileName">metric</Property>
+    <Property name="file-header"></Property>
+  </Properties>
   <Appenders>
+    <RollingFile name="metricFileServer"
+                 fileName="logs/${csvLog.fileName}-Server.log"
+                 filePattern="logs/${csvLog.fileName}-Server-%d{yyyy-MM-dd-HH}.gz" >
+      <CsvParameterLayout delimiter="," header="${file-header}"/>
+      <Policies>
+        <TimeBasedTriggeringPolicy interval="1" modulate="true" /> 
+      </Policies>
+      <DefaultRolloverStrategy/>
+    </RollingFile>
+
+    <RollingFile name="metricFileClient"
+                 fileName="logs/${csvLog.fileName}-Client.log"
+                 filePattern="logs/${csvLog.fileName}-Client-%d{yyyy-MM-dd-HH}.gz" >
+      <CsvParameterLayout delimiter="," header="${file-header}"/>
+      <Policies>
+        <TimeBasedTriggeringPolicy interval="1" modulate="true" /> 
+      </Policies>
+      <DefaultRolloverStrategy/>
+    </RollingFile>
+    
     <Console name="Console" target="SYSTEM_OUT">
       <PatternLayout pattern="%d{ISO8601} [%threadId] %logger{36} %-5level - %msg%n"/>
     </Console>
   </Appenders>
   <Loggers>
+    <Logger name="ClientMetric" level="info" additivity="false">
+      <AppenderRef ref="metricFileClient"/>
+    </Logger>
+    <Logger name="ServerMetric" level="info" additivity="false">
+      <AppenderRef ref="metricFileServer"/>
+    </Logger>
     <Logger name="com.Elessar.app" level="info" additivity="false">
       <AppenderRef ref="Console"/>
     </Logger>

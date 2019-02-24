@@ -1,6 +1,6 @@
 package com.Elessar.app.server;
 
-import com.Elessar.app.client.HttpClient;
+import com.Elessar.app.util.HttpClient;
 import com.Elessar.proto.P2Pmsg;
 import com.Elessar.proto.P2Pmsg.P2PMsgRequest;
 import com.Elessar.proto.P2Pmsg.P2PMsgResponse;

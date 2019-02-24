@@ -5,8 +5,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.util.Scanner;
+
+import com.Elessar.app.util.MetricManager;
 import com.Elessar.database.MyDatabase;
-import com.Elessar.app.client.HttpClient;
+import com.Elessar.app.util.HttpClient;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -18,20 +20,22 @@ import com.sun.net.httpserver.HttpServer;
  * Created by Hans on 1/10/19.
  */
 public class MyServer {
+    public static final String SERVER = "server", LOGON = "logon", LOGOFF = "logoff", REGISTER = "register", P2P_MSG = "p2pMsg";
     private static final Logger logger = LogManager.getLogger(MyServer.class);
-
     private final String serverName;
     private final int port;
     private final MyDatabase db;
     private final HttpClient httpClient;
     private final MsgSender msgSender;
+    private final MetricManager metricManager;
 
-    public MyServer(String serverName, int port, MyDatabase db) {
+    public MyServer(String serverName, int port, MyDatabase db, MetricManager metricManager) {
         this.serverName = serverName;
         this.port = port;
         this.db = db;
         this.httpClient = new HttpClient(new NetHttpTransport().createRequestFactory());
         this.msgSender = new DirectMsgSender(httpClient);
+        this.metricManager = metricManager;
     }
 
     public void run() {
@@ -39,10 +43,10 @@ public class MyServer {
             final HttpServer server = HttpServer.create(new InetSocketAddress(serverName, port), 0);
             server.createContext("/", new RootHandler());
             server.createContext("/echo", new EchoHandler());
-            server.createContext("/register", new RegisterHandler(db));
-            server.createContext("/logon", new LogOnHandler(db, msgSender));
-            server.createContext("/logoff", new LogOffHandler(db));
-            server.createContext("/p2pMessage", new P2PMsgHandler(db, httpClient, msgSender));
+            server.createContext("/register", new RegisterHandler(db, metricManager));
+            server.createContext("/logon", new LogOnHandler(db, msgSender, metricManager));
+            server.createContext("/logoff", new LogOffHandler(db, metricManager));
+            server.createContext("/p2pMessage", new P2PMsgHandler(db, httpClient, msgSender, metricManager));
             server.setExecutor(null);
             server.start();
             logger.info("Server started at port {}", port);

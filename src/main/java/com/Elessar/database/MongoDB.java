@@ -2,8 +2,12 @@ package com.Elessar.database;
 
 import com.Elessar.app.server.Message;
 import com.Elessar.app.server.User;
+import com.Elessar.app.util.Metric;
+import com.Elessar.app.util.MetricManager;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bson.BsonDocument;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -17,54 +21,84 @@ import static com.mongodb.client.model.Filters.or;
  * Created by Hans on 1/20/19.
  */
 public class MongoDB implements MyDatabase{
+    private static final Logger logger = LogManager.getLogger(MongoDB.class);
     private final MongoDatabase db;
-    public MongoDB(MongoDatabase db) {
+    private final MetricManager metricManager;
+
+    public MongoDB(MongoDatabase db, MetricManager metricManager) {
         this.db = db;
+        this.metricManager = metricManager;
     }
 
     @Override
     public void insert(List<Message> messages) {
+        final Metric metric = metricManager.newMetric(new StringBuilder().append(MyDatabase.Database).append(".")
+                                                                           .append(MyDatabase.MESSAGES).append(".")
+                                                                           .append(MyDatabase.INSERT).append("Many").toString());
         final List<Document> docs = new ArrayList<>();
         for (Message message : messages) {
             docs.add(msgToDoc(message));
         }
+
         db.getCollection(MyDatabase.MESSAGES).insertMany(docs);
+
+        metric.timerStop();
     }
 
     @Override
     public void insert(Message message) {
-         final Document doc = msgToDoc(message);
-         db.getCollection(MyDatabase.MESSAGES).insertOne(doc);
+        final Metric metric = metricManager.newMetric(new StringBuilder().append(MyDatabase.Database).append(".")
+                                                                           .append(MyDatabase.MESSAGES).append(".")
+                                                                           .append(MyDatabase.INSERT).append("One").toString());
+        final Document doc = msgToDoc(message);
+        db.getCollection(MyDatabase.MESSAGES).insertOne(doc);
+
+        metric.timerStop();
     }
 
     @Override
     public void insert(User user) {
+        final Metric metric = metricManager.newMetric(new StringBuilder().append(MyDatabase.Database).append(".")
+                                                                           .append(MyDatabase.USERS).append(".")
+                                                                           .append(MyDatabase.INSERT).append("One").toString());
         final Document doc = userToDoc(user);
         db.getCollection(MyDatabase.USERS).insertOne(doc);
+
+        metric.timerStop();
     }
 
     @Override
     public List<Message> find(Message filter) {
+        final Metric metric = metricManager.newMetric(new StringBuilder().append(MyDatabase.Database).append(".")
+                                                                           .append(MyDatabase.MESSAGES).append(".")
+                                                                           .append(MyDatabase.FIND).toString());
         final List<Message> findResult = new ArrayList<>();
         try (MongoCursor<Document> cursor = db.getCollection(MyDatabase.MESSAGES).find(msgToBson(filter)).iterator()) {
             while (cursor.hasNext()) {
                 findResult.add(docToMsg(cursor.next()));
             }
         }
-        return findResult;
 
+        metric.timerStop();
+
+        return findResult;
     }
 
     @Override
     public List<User> find(User filter) {
+        final Metric metric = metricManager.newMetric(new StringBuilder().append(MyDatabase.Database).append(".")
+                                                                           .append(MyDatabase.USERS).append(".")
+                                                                           .append(MyDatabase.FIND).toString());
         final List<User> findResult = new ArrayList<>();
         try (MongoCursor<Document> cursor = db.getCollection(MyDatabase.USERS).find(userToBson(filter)).iterator()) {
             while (cursor.hasNext()) {
                 findResult.add(docToUser(cursor.next()));
             }
         }
-        return findResult;
 
+        metric.timerStop();
+
+        return findResult;
     }
 
     @Deprecated
@@ -77,22 +111,42 @@ public class MongoDB implements MyDatabase{
 
     @Override
     public void update(List<Message> filters, Message update) {
+        final Metric metric = metricManager.newMetric(new StringBuilder().append(MyDatabase.Database).append(".")
+                                                                           .append(MyDatabase.MESSAGES).append(".")
+                                                                           .append(MyDatabase.UPDATE).toString());
+
         db.getCollection(MyDatabase.MESSAGES).updateMany(msgsToBson(filters), new Document("$set", msgToDoc(update)));
+
+        metric.timerStop();
     }
 
     @Override
     public void update(Message filter, Message update) {
+        final Metric metric = metricManager.newMetric(new StringBuilder().append(MyDatabase.Database).append(".")
+                                                                           .append(MyDatabase.MESSAGES).append(".")
+                                                                           .append(MyDatabase.UPDATE).toString());
+
         db.getCollection(MyDatabase.MESSAGES).updateMany(msgToBson(filter), new Document("$set", msgToDoc(update)));
+
+        metric.timerStop();
     }
 
     @Override
     public User update(User user) {
+        final Metric metric = metricManager.newMetric(new StringBuilder().append(MyDatabase.Database).append(".")
+                                                                           .append(MyDatabase.USERS).append(".")
+                                                                           .append(MyDatabase.UPDATE).toString());
         Bson filter = eq(User.NAME, user.getName());
+
         if (user.getPassword() != null) {
             filter = and(filter, eq(User.PASSWORD, user.getPassword()));
         }
-        User update = new User(null, null, user.getEmail(), user.getPhoneNumber(), user.getURL(), user.getOnline());
+
+        final User update = new User(null, null, user.getEmail(), user.getPhoneNumber(), user.getURL(), user.getOnline());
         final Document prevUserDoc = db.getCollection(MyDatabase.USERS).findOneAndUpdate(filter, new Document("$set", userToDoc(update)));
+
+        metric.timerStop();
+
         return docToUser(prevUserDoc);
     }
 
