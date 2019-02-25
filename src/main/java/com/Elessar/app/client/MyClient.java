@@ -21,6 +21,7 @@ import javax.xml.bind.DatatypeConverter;
 import java.net.URL;
 import java.security.MessageDigest;
 
+
 /**
  * Created by Hans on 1/13/19.
  */
@@ -50,10 +51,11 @@ public class MyClient {
                                                                                        .setTimestamp(0L));  // Set time stamp at server side
 
         final HttpResponse response = httpClient.post(new URL(hostURL + "/p2pMessage"), sendMsgRequest.build());
+        final P2PMsgResponse p2PMsgResponse = P2PMsgResponse.parseFrom(response.getContent());
 
         metric.timerStop();
 
-        return P2PMsgResponse.parseFrom(response.getContent());
+        return p2PMsgResponse;
     }
 
 
@@ -68,10 +70,11 @@ public class MyClient {
                                                                            .setPort(clientPort);
 
         final HttpResponse response = httpClient.post(new URL(hostURL + "/logon"), logonRequest.build());
+        final LogonResponse logonResponse = LogonResponse.parseFrom(response.getContent());
 
         metric.timerStop();
 
-        return LogonResponse.parseFrom(response.getContent());
+        return logonResponse;
     }
 
 
@@ -82,10 +85,11 @@ public class MyClient {
         final LogoffRequest.Builder logoffRequest= LogoffRequest.newBuilder().setName(userName);
 
         final HttpResponse response = httpClient.post(new URL(hostURL + "/logoff"), logoffRequest.build());
+        final LogoffResponse logoffResponse = LogoffResponse.parseFrom(response.getContent());
 
         metric.timerStop();
 
-        return LogoffResponse.parseFrom(response.getContent());
+        return logoffResponse;
     }
 
 
@@ -102,10 +106,11 @@ public class MyClient {
                                                                                             .setPhoneNumber(phoneNumber);
 
         final HttpResponse response = httpClient.post(new URL(hostURL + "/register"), registerRequest.build());
+        final RegistrationResponse registrationResponse = RegistrationResponse.parseFrom(response.getContent());
 
         metric.timerStop();
 
-        return RegistrationResponse.parseFrom(response.getContent());
+        return registrationResponse;
     }
 
 
