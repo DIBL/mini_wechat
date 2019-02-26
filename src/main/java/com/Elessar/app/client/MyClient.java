@@ -123,7 +123,7 @@ public class MyClient {
     }
 
 
-    private String hash(String password) throws Exception {
+    public static String hash(String password) throws Exception {
         final MessageDigest md = MessageDigest.getInstance("MD5");
         md.update(password.getBytes());
         return DatatypeConverter.printHexBinary(md.digest());
