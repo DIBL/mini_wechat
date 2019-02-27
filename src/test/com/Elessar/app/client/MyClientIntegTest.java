@@ -247,7 +247,8 @@ public class MyClientIntegTest {
 
 
     private void registerTestSetup() throws Exception {
-        mongoDB.getCollection(MyDatabase.USERS).deleteMany(new Document());
+        mongoDB.getCollection(MyDatabase.USERS).drop();
+        mongoDB.getCollection(MyDatabase.USERS).createIndex(Indexes.text(User.NAME), new IndexOptions().unique(true));
 
         List<Document> list1 = getList(mongoDB.getCollection(MyDatabase.USERS).find(new Document()).iterator());
         assertEquals(true, list1.isEmpty());
