@@ -1,49 +1,101 @@
 package com.Elessar.app;
 
-import com.Elessar.app.server.MyServer;
+import com.Elessar.app.client.MyClient;
+import com.Elessar.app.client.MyClientServer;
 import com.Elessar.app.util.MetricManager;
-import com.Elessar.database.MongoDB;
-import com.Elessar.database.MyDatabase;
-import com.example.tutorial.Addressbook.Person;
-import com.mongodb.client.MongoClients;
-import java.io.*;
-import java.util.logging.Logger;
-import java.util.logging.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-
+import java.util.Random;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- * Created by Hans on 1/7/19.
+ * Created by Hans on 2/27/19.
  */
-
 public class Main {
-    public static void main(String[] args){
-        Logger mongoLogger = Logger.getLogger( "org.mongodb.driver" );
-        mongoLogger.setLevel(Level.SEVERE); // e.g. or Log.WARNING, etc.
-        final MetricManager metricManager = new MetricManager("ServerMetric", 0);
-        final MyDatabase db = new MongoDB(MongoClients.create("mongodb://localhost:27017").getDatabase("myDB"), metricManager);
-        final MyServer server = new MyServer("localhost", 9000, db, metricManager);
-        server.run();
-        //testProtoBuf();
+    private static final Logger logger = LogManager.getLogger(Main.class);
+
+    /**
+     *
+     * @param args [0] username for user1
+     *             [1] port number for user1
+     *             [2] username for user2
+     *             [3] port number for user2
+     *             [4] total number of messages to send
+     */
+    public static void main(String[] args) throws Exception {
+        final String serverURL = new StringBuilder().append("http://127.0.0.1:9000").toString();
+        final MetricManager metricManager = new MetricManager("ClientMetric", 0);
+
+        final String username1 = args[0];
+        final String password1 = "qwe123052vawqw";
+        final String phone1 = getRandomNum(10);
+        final BlockingQueue<String> messageQueue1 = new LinkedBlockingQueue<>();
+        final int port1 = Integer.valueOf(args[1]);
+
+        final String username2 = args[2];
+        final String password2 = "mnsdg21g1742fz";
+        final String phone2 = getRandomNum(10);
+        final BlockingQueue<String> messageQueue2 = new LinkedBlockingQueue<>();
+        final int port2 = Integer.valueOf(args[3]);
+
+        int messageCount = Integer.valueOf(args[4]);
+
+        final MyClient client1 = new MyClient(serverURL, metricManager);
+        final MyClientServer clientServer1 = new MyClientServer("localhost", port1, messageQueue1, metricManager);
+        final MyClient client2 = new MyClient(serverURL, metricManager);
+        final MyClientServer clientServer2 = new MyClientServer("localhost", port2, messageQueue2, metricManager);
+
+        clientServer1.run();
+        clientServer2.run();
+
+        client1.register(username1, password1, username1 + "@163.com", phone1);
+        client2.register(username2, password2, username2 + "@163.com", phone2);
+
+        client1.logOn(username1, password1, port1);
+        client2.logOn(username2, password2, port2);
+
+        final Random r = new Random();
+
+        while (messageCount > 0) {
+            int msgCount1 = r.nextInt(5) + 1;
+            while (messageCount > 0 && msgCount1 > 0) {
+                client1.sendMessage(username1, username2, getRandomStr(10));
+                msgCount1 -= 1;
+                messageCount -= 1;
+            }
+
+            int msgCount2 = r.nextInt(5) + 1;
+            while (messageCount > 0 && msgCount2 > 0) {
+                client2.sendMessage(username2, username1, getRandomStr(10));
+                msgCount2 -= 1;
+                messageCount -= 1;
+            }
+        }
     }
 
-    private static void testProtoBuf() {
-        final Person.Builder sendPersonData = Person.newBuilder().setId(123).setName("DIBL").setEmail("abc@gmail.com");
-        final Person.PhoneNumber.Builder phoneNumber = Person.PhoneNumber.newBuilder().setNumber("321-7684231");
-        sendPersonData.addPhones(phoneNumber);
+    private static String getRandomStr(int length) {
+        final StringBuilder sb = new StringBuilder();
+        final Random r = new Random();
 
-        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-            sendPersonData.build().writeTo(os);
-            try (InputStream is = new ByteArrayInputStream(os.toByteArray())) {
-                final Person receivePersonData = Person.parseFrom(is);
-                System.out.printf("receive and send data is equal: %b\n", sendPersonData.equals(receivePersonData));
-                System.out.println(receivePersonData.toString());
-                System.out.println(sendPersonData.toString());
-            }
-        } catch (IOException e) {
-            System.out.println("Server failed because: " + e.getMessage());
+        for (int i = 0; i < length; i++) {
+            final int num = r.nextInt(26);
+            sb.append((char) ('a' + num));
         }
 
+        return sb.toString();
+    }
+
+    private static String getRandomNum(int length) {
+        final StringBuilder sb = new StringBuilder();
+        final Random r = new Random();
+
+        for (int i = 0; i < length; i++) {
+            final int num = r.nextInt(10);
+            sb.append(num);
+        }
+
+        return sb.toString();
     }
 }
-
