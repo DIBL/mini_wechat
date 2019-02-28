@@ -1,0 +1,4 @@
+mvn exec:java -D exec.mainClass="com.Elessar.app.Main" -D exec.args="'Shuai Ni' 2000 'Feiyi Wang' 2500 10" &
+mvn exec:java -D exec.mainClass="com.Elessar.app.Main" -D exec.args="'Yifu Sun' 3000 'Fangshi Li' 3500 10" &
+mvn exec:java -D exec.mainClass="com.Elessar.app.Main" -D exec.args="'Oulu Xu' 4000 'Yang Tian' 4500 10" &
+mvn exec:java -D exec.mainClass="com.Elessar.app.Main" -D exec.args="'Wenji Liu' 5000 'Jing Li' 5500 10" &
