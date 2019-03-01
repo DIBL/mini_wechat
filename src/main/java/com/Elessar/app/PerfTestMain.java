@@ -2,7 +2,9 @@ package com.Elessar.app;
 
 import com.Elessar.app.client.MyClient;
 import com.Elessar.app.client.MyClientServer;
+import com.Elessar.app.util.Metric;
 import com.Elessar.app.util.MetricManager;
+import com.Elessar.proto.P2Pmsg.P2PMsgResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -13,8 +15,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 /**
  * Created by Hans on 2/27/19.
  */
-public class Main {
-    private static final Logger logger = LogManager.getLogger(Main.class);
+public class PerfTestMain {
+    private static final String CLIENT = "client", P2P_MSG = "p2pMsgRequest";
+    private static final Logger logger = LogManager.getLogger(PerfTestMain.class);
 
     /**
      *
@@ -26,7 +29,7 @@ public class Main {
      */
     public static void main(String[] args) throws Exception {
         final String serverURL = new StringBuilder().append("http://127.0.0.1:9000").toString();
-        final MetricManager metricManager = new MetricManager("ClientMetric", 0);
+        final MetricManager metricManager = new MetricManager("ClientMetric", 100);
 
         final String username1 = args[0];
         final String password1 = "qwe123052vawqw";
@@ -40,7 +43,8 @@ public class Main {
         final BlockingQueue<String> messageQueue2 = new LinkedBlockingQueue<>();
         final int port2 = Integer.valueOf(args[3]);
 
-        int messageCount = Integer.valueOf(args[4]);
+        final int msgRequestCount = Integer.valueOf(args[4]);
+        int messageCount = msgRequestCount;
 
         final MyClient client1 = new MyClient(serverURL, metricManager);
         final MyClientServer clientServer1 = new MyClientServer("localhost", port1, messageQueue1, metricManager);
@@ -57,22 +61,57 @@ public class Main {
         client2.logOn(username2, password2, port2);
 
         final Random r = new Random();
+        int failRequestCount = 0;
 
         while (messageCount > 0) {
             int msgCount1 = r.nextInt(5) + 1;
             while (messageCount > 0 && msgCount1 > 0) {
-                client1.sendMessage(username1, username2, getRandomStr(10));
-                msgCount1 -= 1;
-                messageCount -= 1;
+                final Metric metric = metricManager.newMetric(new StringBuilder().append(CLIENT).append(".")
+                                                                                 .append(P2P_MSG).toString());
+                try {
+                    P2PMsgResponse p2PMsgResponse1 = client1.sendMessage(username1, username2, getRandomStr(10));
+
+                    if (p2PMsgResponse1.getSuccess()) {
+                        msgCount1 -= 1;
+                        messageCount -= 1;
+                    } else {
+                        failRequestCount += 1;
+                        logger.error("Failed to send message from {} to {}, because {}", username1, username2, p2PMsgResponse1.getFailReason());
+                    }
+                } catch (Exception e) {
+                    failRequestCount += 1;
+                    logger.error("Caught exception during sending message from {} to {}: {}", username1, username2, e.getMessage());
+                }
+
+                metric.timerStop();
             }
 
             int msgCount2 = r.nextInt(5) + 1;
             while (messageCount > 0 && msgCount2 > 0) {
-                client2.sendMessage(username2, username1, getRandomStr(10));
-                msgCount2 -= 1;
-                messageCount -= 1;
+                final Metric metric = metricManager.newMetric(new StringBuilder().append(CLIENT).append(".")
+                                                                                 .append(P2P_MSG).toString());
+
+                try {
+                    P2PMsgResponse p2PMsgResponse2 = client2.sendMessage(username2, username1, getRandomStr(10));
+
+                    if (p2PMsgResponse2.getSuccess()) {
+                        msgCount2 -= 1;
+                        messageCount -= 1;
+                    } else {
+                        failRequestCount += 1;
+                        logger.error("Failed to send message from {} to {}, because {}", username2, username1, p2PMsgResponse2.getFailReason());
+                    }
+                } catch (Exception e) {
+                    failRequestCount += 1;
+                    logger.error("Caught exception during sending message from {} to {}: {}", username2, username1, e.getMessage());
+                }
+
+                metric.timerStop();
             }
         }
+
+        final double failRequestRate = failRequestCount * 1.0 / msgRequestCount;
+        logger.info("Total failed p2p message request number is {} and failed rate is {}", failRequestCount, failRequestRate);
     }
 
     private static String getRandomStr(int length) {
