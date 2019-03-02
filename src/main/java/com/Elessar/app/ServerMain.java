@@ -16,7 +16,7 @@ import java.util.logging.Level;
  * Created by Hans on 1/7/19.
  */
 
-public class Main {
+public class ServerMain {
     public static void main(String[] args){
         Logger mongoLogger = Logger.getLogger( "org.mongodb.driver" );
         mongoLogger.setLevel(Level.SEVERE); // e.g. or Log.WARNING, etc.
