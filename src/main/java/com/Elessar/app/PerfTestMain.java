@@ -2,7 +2,6 @@ package com.Elessar.app;
 
 import com.Elessar.app.client.MyClient;
 import com.Elessar.app.client.MyClientServer;
-import com.Elessar.app.util.Metric;
 import com.Elessar.app.util.MetricManager;
 import com.Elessar.proto.P2Pmsg.P2PMsgResponse;
 import org.apache.logging.log4j.LogManager;
@@ -16,7 +15,6 @@ import java.util.concurrent.LinkedBlockingQueue;
  * Created by Hans on 2/27/19.
  */
 public class PerfTestMain {
-    private static final String CLIENT = "client", P2P_MSG = "p2pMsgRequest";
     private static final Logger logger = LogManager.getLogger(PerfTestMain.class);
 
     /**
@@ -66,8 +64,6 @@ public class PerfTestMain {
         while (messageCount > 0) {
             int msgCount1 = r.nextInt(5) + 1;
             while (messageCount > 0 && msgCount1 > 0) {
-                final Metric metric = metricManager.newMetric(new StringBuilder().append(CLIENT).append(".")
-                                                                                 .append(P2P_MSG).toString());
                 try {
                     P2PMsgResponse p2PMsgResponse1 = client1.sendMessage(username1, username2, getRandomStr(10));
 
@@ -82,15 +78,10 @@ public class PerfTestMain {
                     failRequestCount += 1;
                     logger.error("Caught exception during sending message from {} to {}: {}", username1, username2, e.getMessage());
                 }
-
-                metric.timerStop();
             }
 
             int msgCount2 = r.nextInt(5) + 1;
             while (messageCount > 0 && msgCount2 > 0) {
-                final Metric metric = metricManager.newMetric(new StringBuilder().append(CLIENT).append(".")
-                                                                                 .append(P2P_MSG).toString());
-
                 try {
                     P2PMsgResponse p2PMsgResponse2 = client2.sendMessage(username2, username1, getRandomStr(10));
 
@@ -105,8 +96,6 @@ public class PerfTestMain {
                     failRequestCount += 1;
                     logger.error("Caught exception during sending message from {} to {}: {}", username2, username1, e.getMessage());
                 }
-
-                metric.timerStop();
             }
         }
 
