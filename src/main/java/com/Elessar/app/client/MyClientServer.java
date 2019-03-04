@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executors;
 
 /**
  * Created by Hans on 2/1/19.
@@ -38,7 +39,7 @@ public class MyClientServer {
         try {
             final HttpServer server = HttpServer.create(new InetSocketAddress(serverName, port), 0);
             server.createContext("/p2pMessage", new P2PMsgHandler(messageQueue, metricManager));
-            server.setExecutor(null);
+            server.setExecutor(Executors.newCachedThreadPool());
             server.start();
             logger.info("Client Server started at port {}", port);
         } catch (IOException e) {

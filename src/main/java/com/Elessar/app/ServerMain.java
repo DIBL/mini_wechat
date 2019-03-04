@@ -20,7 +20,7 @@ public class ServerMain {
     public static void main(String[] args){
         Logger mongoLogger = Logger.getLogger( "org.mongodb.driver" );
         mongoLogger.setLevel(Level.SEVERE); // e.g. or Log.WARNING, etc.
-        final MetricManager metricManager = new MetricManager("ServerMetric", 0);
+        final MetricManager metricManager = new MetricManager("ServerMetric", 100);
         final MyDatabase db = new MongoDB(MongoClients.create("mongodb://localhost:27017").getDatabase("myDB"), metricManager);
         final MyServer server = new MyServer("localhost", 9000, db, metricManager);
         server.run();
