@@ -29,7 +29,7 @@ public class ClientMain {
      * @param args [0] server address, [1] server port number, [2] client port number
      */
     public static void main(String[] args){
-        final MetricManager metricManager = new MetricManager("ClientMetric", 0);
+        final MetricManager metricManager = new MetricManager("ClientMetric", 100);
         final BlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
 
         final String serverAddress = args[0];

@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.util.Scanner;
+import java.util.concurrent.Executors;
 
 import com.Elessar.app.util.MetricManager;
 import com.Elessar.database.MyDatabase;
@@ -47,7 +48,7 @@ public class MyServer {
             server.createContext("/logon", new LogOnHandler(db, msgSender, metricManager));
             server.createContext("/logoff", new LogOffHandler(db, metricManager));
             server.createContext("/p2pMessage", new P2PMsgHandler(db, httpClient, msgSender, metricManager));
-            server.setExecutor(null);
+            server.setExecutor(Executors.newCachedThreadPool());
             server.start();
             logger.info("Server started at port {}", port);
         } catch (IOException e) {
