@@ -39,7 +39,7 @@ public class MyClientServer {
         try {
             final HttpServer server = HttpServer.create(new InetSocketAddress(serverName, port), 0);
             server.createContext("/p2pMessage", new P2PMsgHandler(messageQueue, metricManager));
-            server.setExecutor(Executors.newCachedThreadPool());
+            server.setExecutor(Executors.newFixedThreadPool(2));
             server.start();
             logger.info("Client Server started at port {}", port);
         } catch (IOException e) {
