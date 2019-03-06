@@ -1,6 +1,5 @@
 #!/usr/bin/perl
 
-
 my %port = get_port();
 # my @names = ('Shuai Ni', 'Yifu Sun', 'Zhi Xu', 'Yang Tian', 'Wenji Liu', 'Shuai Hu', 'Fangshi Li', 'Feiyi Wang', 'Oulu Xu', 'Jing Li');
 my @names = ('Shuai Ni', 'Yifu Sun', 'Zhi Xu', 'Yang Tian');
