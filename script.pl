@@ -21,7 +21,7 @@ my %port = get_port();
 my %password = get_password();
 my @names = ('Shuai Ni', 'Yifu Sun', 'Zhi Xu', 'Yang Tian', 'Wenji Liu', 'Shuai Hu', 'Fangshi Li', 'Feiyi Wang', 'Oulu Xu', 'Jing Li');
 my $names_len = scalar @names;
-my $msgCount = 10;
+my $msgCount = 100;
 
 
 
@@ -29,7 +29,7 @@ my $msgCount = 10;
 for (my $i = 0; $i < $names_len; $i += 1) {
 	$pm->start and next;
 
-	system qq{java -jar ./target/mini-wechat-client-jar-with-dependencies.jar $port{$names[$i]}};
+	system qq{java -jar ./target/mini-wechat-client.jar $port{$names[$i]}};
 
 	$pm->finish;
 }
@@ -41,7 +41,7 @@ for (my $i = 0; $i < $names_len; $i += 1) {
 	for (my $j = $i + 1; $j < $names_len; $j += 1) {
 		$pm->start and next;
 
-		system qq{java -jar ./target/mini-wechat-perftest-jar-with-dependencies.jar '$names[$i]' $password{$names[$i]}, $port{$names[$i]} '$names[$j]' $password{$names[$j]}, $port{$names[$j]} $msgCount};
+		system qq{java -jar ./target/mini-wechat-perftest.jar '$names[$i]' $password{$names[$i]}, $port{$names[$i]} '$names[$j]' $password{$names[$j]}, $port{$names[$j]} $msgCount};
 		
 		$pm->finish;
 	}

@@ -7,7 +7,7 @@
   <Appenders>
     <RollingFile name="metricFileServer"
                  fileName="logs/${csvLog.fileName}-Server.log"
-                 filePattern="logs/${csvLog.fileName}-Server-%d{yyyy-MM-dd-HH}.gz" >
+                 filePattern="logs/${csvLog.fileName}-Server-%d{yyyy-MM-dd-HH}.log" >
       <CsvParameterLayout delimiter="," header="${file-header}"/>
       <Policies>
         <TimeBasedTriggeringPolicy interval="1" modulate="true" /> 
@@ -17,7 +17,7 @@
 
     <RollingFile name="metricFileClient"
                  fileName="logs/${csvLog.fileName}-Client.log"
-                 filePattern="logs/${csvLog.fileName}-Client-%d{yyyy-MM-dd-HH}.gz" >
+                 filePattern="logs/${csvLog.fileName}-Client-%d{yyyy-MM-dd-HH}.log" >
       <CsvParameterLayout delimiter="," header="${file-header}"/>
       <Policies>
         <TimeBasedTriggeringPolicy interval="1" modulate="true" /> 
