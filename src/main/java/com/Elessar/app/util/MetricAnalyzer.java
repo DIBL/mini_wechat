@@ -17,13 +17,13 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
  */
 public class MetricAnalyzer {
     public static class MetricMapper extends Mapper<Object, Text, Text, DoubleWritable> {
-        private Text operation = new Text();
-        private DoubleWritable duration = new DoubleWritable();
+        private final Text operation = new Text();
+        private final DoubleWritable duration = new DoubleWritable();
 
         public void map(Object key, Text value, Context context)
                 throws IOException, InterruptedException {
 
-            String[] line = value.toString().split(",");
+            final String[] line = value.toString().split(",");
             operation.set(line[0]);
             duration.set(Double.valueOf(line[2]));
             context.write(operation, duration);
@@ -31,7 +31,7 @@ public class MetricAnalyzer {
     }
 
     public static class MetricAvgReducer extends Reducer<Text, DoubleWritable, Text, DoubleWritable> {
-        private DoubleWritable durationAvg = new DoubleWritable();
+        private final DoubleWritable durationAvg = new DoubleWritable();
 
         public void reduce(Text operation, Iterable<DoubleWritable> durations, Context context)
                 throws IOException, InterruptedException {
@@ -49,7 +49,7 @@ public class MetricAnalyzer {
     }
 
     public static class MetricCountReducer extends Reducer<Text, DoubleWritable, Text, DoubleWritable> {
-        private DoubleWritable durationCount = new DoubleWritable();
+        private final DoubleWritable durationCount = new DoubleWritable();
 
         public void reduce(Text operation, Iterable<DoubleWritable> durations, Context context)
                 throws IOException, InterruptedException {
@@ -65,8 +65,8 @@ public class MetricAnalyzer {
     }
 
     public static void main(String[] args) throws Exception {
-        Configuration conf = new Configuration();
-        Job job = Job.getInstance(conf, "metric count");
+        final Configuration conf = new Configuration();
+        final Job job = Job.getInstance(conf, "metric count");
         job.setJarByClass(MetricAnalyzer.class);
         job.setMapperClass(MetricMapper.class);
         job.setReducerClass(MetricAvgReducer.class);
