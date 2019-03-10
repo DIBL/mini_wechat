@@ -21,7 +21,7 @@ my %port = get_port();
 my %password = get_password();
 my @names = ('Shuai Ni', 'Yifu Sun', 'Zhi Xu', 'Yang Tian', 'Wenji Liu', 'Shuai Hu', 'Fangshi Li', 'Feiyi Wang', 'Oulu Xu', 'Jing Li');
 my $names_len = scalar @names;
-my $msgCount = 100;
+my $msgCount = 1000;
 
 
 

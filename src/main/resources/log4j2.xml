@@ -10,7 +10,8 @@
                  filePattern="logs/${csvLog.fileName}-Server-%d{yyyy-MM-dd-HH}.log" >
       <CsvParameterLayout delimiter="," header="${file-header}"/>
       <Policies>
-        <TimeBasedTriggeringPolicy interval="1" modulate="true" /> 
+        <TimeBasedTriggeringPolicy interval="1" modulate="true" />
+        <SizeBasedTriggeringPolicy size="10 MB" />
       </Policies>
       <DefaultRolloverStrategy/>
     </RollingFile>
@@ -20,7 +21,8 @@
                  filePattern="logs/${csvLog.fileName}-Client-%d{yyyy-MM-dd-HH}.log" >
       <CsvParameterLayout delimiter="," header="${file-header}"/>
       <Policies>
-        <TimeBasedTriggeringPolicy interval="1" modulate="true" /> 
+        <TimeBasedTriggeringPolicy interval="1" modulate="true" />
+        <SizeBasedTriggeringPolicy size="10 MB" />
       </Policies>
       <DefaultRolloverStrategy/>
     </RollingFile>
