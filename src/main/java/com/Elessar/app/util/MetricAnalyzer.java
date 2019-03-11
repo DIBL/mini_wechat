@@ -30,7 +30,7 @@ public class MetricAnalyzer {
         }
     }
 
-    public static class MetricBucketMapper extends Mapper<Object, Text, Text, DoubleWritable> {
+    public static class MetricHistogramMapper extends Mapper<Object, Text, Text, DoubleWritable> {
         private final int bucketSize = 20;
         private final Text operation_bucketID = new Text();
 
@@ -84,17 +84,16 @@ public class MetricAnalyzer {
         final Job job = Job.getInstance(conf, "metric count");
         job.setJarByClass(MetricAnalyzer.class);
         if ("histogram".equals(args[0])) {
-            job.setMapperClass(MetricBucketMapper.class);
-        } else {
-            job.setMapperClass(MetricMapper.class);
-        }
-
-        if ("average".equals(args[0])) {
-            job.setReducerClass(MetricAvgReducer.class);
-//            job.setCombinerClass(MetricAvgReducer.class);
-        } else {
+            job.setMapperClass(MetricHistogramMapper.class);
             job.setReducerClass(MetricCountReducer.class);
-//            job.setCombinerClass(MetricCountReducer.class);
+        } else if ("average".equals(args[0])) {
+            job.setMapperClass(MetricMapper.class);
+            job.setReducerClass(MetricAvgReducer.class);
+        } else if ("count".equals(args[0])) {
+            job.setMapperClass(MetricMapper.class);
+            job.setReducerClass(MetricCountReducer.class);
+        } else {
+            throw new RuntimeException();
         }
 
         job.setMapOutputKeyClass(Text.class);

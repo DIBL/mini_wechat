@@ -1,5 +1,6 @@
 # 10 people, 45000 messages total
 # Operation_bucketID, Frequency
+# Commit hash: 15f2596f363566975b6f0540d92f7871191c1b94
 
 client.logon_0	13.0
 client.logon_1	19.0
