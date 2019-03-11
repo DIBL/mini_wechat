@@ -6,6 +6,7 @@ import com.Elessar.database.MyDatabase;
 import com.Elessar.proto.Logon.LogonResponse;
 import com.Elessar.proto.Logon.LogonRequest;
 import com.Elessar.proto.P2Pmsg.P2PMsgResponse;
+import com.google.common.cache.LoadingCache;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.apache.logging.log4j.LogManager;
@@ -23,11 +24,14 @@ public class LogOnHandler implements HttpHandler {
     private static final Logger logger = LogManager.getLogger(LogOnHandler.class);
     private final MyDatabase db;
     private final MsgSender msgSender;
+    private final LoadingCache<String, User> users;
     private final MetricManager metricManager;
 
-    public LogOnHandler(MyDatabase db, MsgSender msgSender, MetricManager metricManager) {
+
+    public LogOnHandler(MyDatabase db, MsgSender msgSender, LoadingCache<String, User> users, MetricManager metricManager) {
         this.db = db;
         this.msgSender = msgSender;
+        this.users = users;
         this.metricManager = metricManager;
     }
 
@@ -52,14 +56,16 @@ public class LogOnHandler implements HttpHandler {
             final LogonRequest logonRequest = LogonRequest.parseFrom(is);
             final LogonResponse.Builder logonResponse = LogonResponse.newBuilder();
             final String userName = logonRequest.getName();
+            final String password = logonRequest.getPassword();
             final String clientURL = new StringBuilder().append("http://")
-                                                               .append(he.getRemoteAddress().getAddress().getHostAddress())
-                                                               .append(":")
-                                                               .append(logonRequest.getPort()).toString();
+                                                        .append(he.getRemoteAddress().getAddress().getHostAddress())
+                                                        .append(":")
+                                                        .append(logonRequest.getPort()).toString();
 
-            final User prevUser = db.update(new User(userName, logonRequest.getPassword(), null, null, clientURL, true));
+            final User prevUser = users.getUnchecked(userName);
+            final User currUser = new User(userName, password, null, null, clientURL, true);
 
-            if (prevUser == null) {
+            if (prevUser == null || !password.equals(prevUser.getPassword())) {
                 logger.info("User {} and password combination does NOT exist !", userName);
                 logonResponse.setSuccess(false).setFailReason("User " + userName + " password combination does NOT exist !");
                 he.sendResponseHeaders(400, 0);
@@ -67,10 +73,18 @@ public class LogOnHandler implements HttpHandler {
                 logger.info("User {} has already log on !", userName);
                 logonResponse.setSuccess(true);
                 he.sendResponseHeaders(200, 0);
+
+                if (!clientURL.equals(prevUser.getURL())) {
+                    db.update(currUser);
+                    users.put(userName, currUser);
+                }
             } else {
                 logger.info("User {} successfully log on !", userName);
                 logonResponse.setSuccess(true);
                 he.sendResponseHeaders(200, 0); //2nd arg = 0 means chunked encoding is used, an arbitrary number of bytes may be written
+
+                db.update(currUser);
+                users.put(userName, currUser);
 
                 // Get the list of unread messages sent to user
                 List<Message> messages = db.find(new Message(null, userName, null, null, false));

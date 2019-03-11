@@ -3,6 +3,7 @@ package com.Elessar.app.server;
 import com.Elessar.app.util.Metric;
 import com.Elessar.app.util.MetricManager;
 import com.Elessar.database.MyDatabase;
+import com.google.common.cache.LoadingCache;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.Elessar.proto.Registration.RegistrationResponse;
@@ -21,10 +22,12 @@ import java.io.OutputStream;
 public class RegisterHandler implements HttpHandler {
     private static final Logger logger = LogManager.getLogger(RegisterHandler.class);
     private final MyDatabase db;
+    private final LoadingCache<String, User> users;
     private final MetricManager metricManager;
 
-    public RegisterHandler(MyDatabase db, MetricManager metricManager) {
+    public RegisterHandler(MyDatabase db, LoadingCache<String, User> users, MetricManager metricManager) {
         this.db = db;
+        this.users = users;
         this.metricManager = metricManager;
     }
 
@@ -49,6 +52,20 @@ public class RegisterHandler implements HttpHandler {
             final RegistrationRequest regRequest = RegistrationRequest.parseFrom(is);
             final RegistrationResponse.Builder regResponse = RegistrationResponse.newBuilder();
             final String userName = regRequest.getName();
+            final User user = users.getUnchecked(userName);
+
+            if (user != null) {
+                logger.error("User name {} already exists", userName);
+                regResponse.setSuccess(false).setFailReason("User Name " + userName + " Exists !");
+                he.sendResponseHeaders(400, 0);
+
+                try (final OutputStream os = he.getResponseBody()) {
+                    regResponse.build().writeTo(os);
+                }
+
+                return ;
+            }
+
             try {
                 db.insert(new User(regRequest.getName(),
                                    regRequest.getPassword(),
