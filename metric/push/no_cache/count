@@ -1,0 +1,15 @@
+# 10 people, 45000 messages total
+# Operation, Average Time (ms)
+# Commit hash: 15f2596f363566975b6f0540d92f7871191c1b94
+
+client.logon	90.0
+client.p2pMsg	40725.0
+client.register	90.0
+clientServer.p2pMsg	44440.0
+db.messages.insertMany	44979.0
+db.messages.update	44979.0
+db.users.find	44979.0
+db.users.update	90.0
+server.logon	90.0
+server.p2pMsg	44977.0
+server.register	90.0

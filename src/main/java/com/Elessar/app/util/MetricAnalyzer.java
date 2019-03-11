@@ -30,6 +30,21 @@ public class MetricAnalyzer {
         }
     }
 
+    public static class MetricHistogramMapper extends Mapper<Object, Text, Text, DoubleWritable> {
+        private final int bucketSize = 20;
+        private final Text operation_bucketID = new Text();
+
+
+        public void map(Object key, Text value, Context context)
+                throws IOException, InterruptedException {
+
+            final String[] line = value.toString().split(",");
+            final int bucketID = Integer.parseInt(line[2]) / bucketSize;
+            operation_bucketID.set(line[0]+ "_" + bucketID);
+            context.write(operation_bucketID, new DoubleWritable(1));
+        }
+    }
+
     public static class MetricAvgReducer extends Reducer<Text, DoubleWritable, Text, DoubleWritable> {
         private final DoubleWritable durationAvg = new DoubleWritable();
 
@@ -68,14 +83,17 @@ public class MetricAnalyzer {
         final Configuration conf = new Configuration();
         final Job job = Job.getInstance(conf, "metric count");
         job.setJarByClass(MetricAnalyzer.class);
-        job.setMapperClass(MetricMapper.class);
-
-        if ("average".equals(args[0])) {
-            job.setReducerClass(MetricAvgReducer.class);
-            job.setCombinerClass(MetricAvgReducer.class);
-        } else {
+        if ("histogram".equals(args[0])) {
+            job.setMapperClass(MetricHistogramMapper.class);
             job.setReducerClass(MetricCountReducer.class);
-            job.setCombinerClass(MetricCountReducer.class);
+        } else if ("average".equals(args[0])) {
+            job.setMapperClass(MetricMapper.class);
+            job.setReducerClass(MetricAvgReducer.class);
+        } else if ("count".equals(args[0])) {
+            job.setMapperClass(MetricMapper.class);
+            job.setReducerClass(MetricCountReducer.class);
+        } else {
+            throw new RuntimeException("Unsupported metric: " + args[0]);
         }
 
         job.setMapOutputKeyClass(Text.class);
