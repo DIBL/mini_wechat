@@ -93,7 +93,7 @@ public class MetricAnalyzer {
             job.setMapperClass(MetricMapper.class);
             job.setReducerClass(MetricCountReducer.class);
         } else {
-            throw new RuntimeException();
+            throw new RuntimeException("Unsupported metric: " + args[0]);
         }
 
         job.setMapOutputKeyClass(Text.class);
