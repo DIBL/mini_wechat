@@ -52,9 +52,9 @@ public class RegisterHandler implements HttpHandler {
             final RegistrationRequest regRequest = RegistrationRequest.parseFrom(is);
             final RegistrationResponse.Builder regResponse = RegistrationResponse.newBuilder();
             final String userName = regRequest.getName();
-            final User user = users.getUnchecked(userName);
+            final User prevUser = users.getUnchecked(userName);
 
-            if (user != null) {
+            if (userName.equals(prevUser.getName())) {
                 logger.error("User name {} already exists", userName);
                 regResponse.setSuccess(false).setFailReason("User Name " + userName + " Exists !");
                 he.sendResponseHeaders(400, 0);
@@ -66,16 +66,21 @@ public class RegisterHandler implements HttpHandler {
                 return ;
             }
 
+            // Do we need to check whether prevUser.getName() is null here?
             try {
-                db.insert(new User(regRequest.getName(),
-                                   regRequest.getPassword(),
-                                   regRequest.getEmail(),
-                                   regRequest.getPhoneNumber(),
-                                   "",
-                                   false));
+                User currUser = new User(regRequest.getName(),
+                                         regRequest.getPassword(),
+                                         regRequest.getEmail(),
+                                         regRequest.getPhoneNumber(),
+                                         "",
+                                         false);
+                db.insert(currUser);
+                users.put(userName, currUser);
                 logger.info("User {} successfully registered !", userName);
+
                 regResponse.setSuccess(true);
                 he.sendResponseHeaders(200, 0);
+
             } catch (Exception e) {
                 logger.error("User name {} already exists, caught exception: {}", userName, e.getMessage());
                 regResponse.setSuccess(false).setFailReason("User Name " + userName + " Exists !");

@@ -33,6 +33,8 @@ public class MyClientIntegTest {
     private static MongoDatabase mongoDB;
     private static MyClient clientA, clientB;
     private static int clientA_Port, clientB_Port;
+    private static MyServer server;
+
 
 
     @BeforeClass
@@ -44,15 +46,11 @@ public class MyClientIntegTest {
                                                     .append(serverPort).toString();
         clientA_Port = 4000;
         clientB_Port = 5000;
-        final MetricManager serverMetricManager = new MetricManager("ServerMetric", 1000000);
+
         final MetricManager clientMetricManager = new MetricManager("ClientMetric", 1000000);
 
-        // Setup server
+        // Setup DB
         mongoDB = MongoClients.create("mongodb://localhost:27017").getDatabase("MyClientIntegTest");
-        mongoDB.getCollection(MyDatabase.USERS).createIndex(Indexes.text(User.NAME), new IndexOptions().unique(true));
-
-        final MyDatabase db = new MongoDB(mongoDB, serverMetricManager);
-        final MyServer server = new MyServer("localhost", serverPort, db, serverMetricManager);
 
         // Setup client A
         final BlockingQueue<String> msgQueueA = new LinkedBlockingQueue<>();
@@ -64,7 +62,6 @@ public class MyClientIntegTest {
         clientB = new MyClient(serverURL, clientMetricManager);
         final MyClientServer clientB_Server = new MyClientServer("localhost", clientB_Port, msgQueueB, clientMetricManager);
 
-        server.run();
         clientA_Server.run();
         clientB_Server.run();
     }
@@ -245,6 +242,21 @@ public class MyClientIntegTest {
         mongoDB.drop();
     }
 
+    @Before
+    public void startServer() {
+        // Setup server
+        final int serverPort = 9000;
+        final MetricManager serverMetricManager = new MetricManager("ServerMetric", 1000000);
+        final MyDatabase db = new MongoDB(mongoDB, serverMetricManager);
+        server = new MyServer("localhost", serverPort, db, serverMetricManager);
+
+        server.run();
+    }
+
+    @After
+    public void stopServer() {
+        server.stop();
+    }
 
     private void registerTestSetup() throws Exception {
         mongoDB.getCollection(MyDatabase.USERS).drop();

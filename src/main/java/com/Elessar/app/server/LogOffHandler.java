@@ -55,8 +55,7 @@ public class LogOffHandler implements HttpHandler {
             final User prevUser = users.getUnchecked(userName);
             final User currUser = new User(userName, null, null, null, null, false);
 
-                    //db.update(new User(userName, null, null, null, null, false));
-            if (prevUser == null) {
+            if (prevUser.getName() == null) {
                 logger.info("User {} is NOT registered !", userName);
                 logoffResponse.setSuccess(false).setFailReason("User " + userName + " is NOT a registered !");
                 he.sendResponseHeaders(400, 0);
@@ -68,9 +67,9 @@ public class LogOffHandler implements HttpHandler {
                 logger.info("User {} successfully log off !", userName);
                 logoffResponse.setSuccess(true);
                 he.sendResponseHeaders(200, 0);
-                
+
+                users.invalidate(userName);
                 db.update(currUser);
-                users.put(userName, currUser);
             }
 
             try (final OutputStream os = he.getResponseBody()) {

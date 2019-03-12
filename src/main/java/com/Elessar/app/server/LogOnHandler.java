@@ -65,7 +65,7 @@ public class LogOnHandler implements HttpHandler {
             final User prevUser = users.getUnchecked(userName);
             final User currUser = new User(userName, password, null, null, clientURL, true);
 
-            if (prevUser == null || !password.equals(prevUser.getPassword())) {
+            if (prevUser.getName() == null || !password.equals(prevUser.getPassword())) {
                 logger.info("User {} and password combination does NOT exist !", userName);
                 logonResponse.setSuccess(false).setFailReason("User " + userName + " password combination does NOT exist !");
                 he.sendResponseHeaders(400, 0);
@@ -75,16 +75,16 @@ public class LogOnHandler implements HttpHandler {
                 he.sendResponseHeaders(200, 0);
 
                 if (!clientURL.equals(prevUser.getURL())) {
+                    users.invalidate(userName);
                     db.update(currUser);
-                    users.put(userName, currUser);
                 }
             } else {
                 logger.info("User {} successfully log on !", userName);
                 logonResponse.setSuccess(true);
                 he.sendResponseHeaders(200, 0); //2nd arg = 0 means chunked encoding is used, an arbitrary number of bytes may be written
 
+                users.invalidate(userName);
                 db.update(currUser);
-                users.put(userName, currUser);
 
                 // Get the list of unread messages sent to user
                 List<Message> messages = db.find(new Message(null, userName, null, null, false));

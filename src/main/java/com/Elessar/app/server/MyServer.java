@@ -34,6 +34,7 @@ public class MyServer {
     private final MsgSender msgSender;
     private final MetricManager metricManager;
     private final LoadingCache<String, User> users;
+    private HttpServer server;
 
     public MyServer(String serverName, int port, MyDatabase db, MetricManager metricManager) {
         this.serverName = serverName;
@@ -49,8 +50,9 @@ public class MyServer {
                             @Override
                             public User load(String userName) {
                                 final List<User> users = db.find(new User(userName, null, null, null, null, null));
+                                // Cannot find current user, return an empty user
                                 if (users.isEmpty()) {
-                                    return null;
+                                    return new User(null, null, null, null, null, null);
                                 }
 
                                 return users.get(0);
@@ -61,7 +63,7 @@ public class MyServer {
 
     public void run() {
         try {
-            final HttpServer server = HttpServer.create(new InetSocketAddress(serverName, port), 0);
+            server = HttpServer.create(new InetSocketAddress(serverName, port), 0);
             server.createContext("/", new RootHandler());
             server.createContext("/echo", new EchoHandler());
             server.createContext("/register", new RegisterHandler(db, users, metricManager));
@@ -71,9 +73,15 @@ public class MyServer {
             server.setExecutor(Executors.newCachedThreadPool());
             server.start();
             logger.info("Server started at port {}", port);
+
+
         } catch (IOException e) {
             logger.fatal("Caught exception during server startup: {}", e.getMessage());
         }
+    }
+
+    public void stop() {
+        server.stop(0);
     }
 
     private static class RootHandler implements HttpHandler {

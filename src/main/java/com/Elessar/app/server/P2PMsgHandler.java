@@ -62,7 +62,7 @@ public class P2PMsgHandler implements HttpHandler {
             final String toUser = p2pMsgRequest.getToUser();
             final User user = users.getUnchecked(toUser);
 
-            if (user == null) {
+            if (user.getName() == null) {
                 logger.info("Can NOT send message to {} because {} is NOT registered !", toUser, toUser);
                 p2pMsgResponse.setSuccess(false)
                               .setIsDelivered(false)
