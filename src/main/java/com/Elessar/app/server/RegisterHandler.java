@@ -74,8 +74,8 @@ public class RegisterHandler implements HttpHandler {
                                          regRequest.getPhoneNumber(),
                                          "",
                                          false);
-                db.insert(currUser);
                 users.put(userName, currUser);
+                db.insert(currUser);
                 logger.info("User {} successfully registered !", userName);
 
                 regResponse.setSuccess(true);

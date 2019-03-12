@@ -68,8 +68,8 @@ public class LogOffHandler implements HttpHandler {
                 logoffResponse.setSuccess(true);
                 he.sendResponseHeaders(200, 0);
 
-                users.invalidate(userName);
                 db.update(currUser);
+                users.invalidate(userName);
             }
 
             try (final OutputStream os = he.getResponseBody()) {

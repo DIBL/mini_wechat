@@ -75,16 +75,16 @@ public class LogOnHandler implements HttpHandler {
                 he.sendResponseHeaders(200, 0);
 
                 if (!clientURL.equals(prevUser.getURL())) {
-                    users.invalidate(userName);
                     db.update(currUser);
+                    users.invalidate(userName);
                 }
             } else {
                 logger.info("User {} successfully log on !", userName);
                 logonResponse.setSuccess(true);
                 he.sendResponseHeaders(200, 0); //2nd arg = 0 means chunked encoding is used, an arbitrary number of bytes may be written
 
-                users.invalidate(userName);
                 db.update(currUser);
+                users.invalidate(userName);
 
                 // Get the list of unread messages sent to user
                 List<Message> messages = db.find(new Message(null, userName, null, null, false));
