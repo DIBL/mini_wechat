@@ -10,6 +10,9 @@ import com.Elessar.proto.Logoff.LogoffResponse;
 import com.Elessar.proto.Logon.LogonResponse;
 import com.Elessar.proto.P2Pmsg.P2PMsgResponse;
 import com.Elessar.proto.Registration.RegistrationResponse;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
@@ -22,6 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+
 import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Filters.or;
 import static org.junit.Assert.assertEquals;
@@ -33,24 +38,48 @@ public class MyClientIntegTest {
     private static MongoDatabase mongoDB;
     private static MyClient clientA, clientB;
     private static int clientA_Port, clientB_Port;
-    private static MyServer server;
-
-
+    private static LoadingCache<String, User> users;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
+        // Setup DB
+        mongoDB = MongoClients.create("mongodb://localhost:27017").getDatabase("MyClientIntegTest");
+        final MetricManager serverMetricManager = new MetricManager("ServerMetric", 1000000);
+        final MyDatabase db = new MongoDB(mongoDB, serverMetricManager);
+
+        // Setup server
         final String serverAddress = "127.0.0.1";
         final int serverPort = 9000;
         final String serverURL = new StringBuilder().append("http://")
                                                     .append(serverAddress).append(":")
                                                     .append(serverPort).toString();
+        users = CacheBuilder.newBuilder()
+                .maximumSize(1000)
+                .expireAfterAccess(60, TimeUnit.SECONDS)
+                .build(
+                        new CacheLoader<String, User>() {
+                            @Override
+                            public User load(String userName) {
+                                final List<User> users = db.find(new User(userName, null, null, null, null, null));
+                                // Cannot find current user, return an empty user
+                                if (users.isEmpty()) {
+                                    return new User(null, null, null, null, null, null);
+                                }
+
+                                return users.get(0);
+                            }
+                        }
+                );
+
+        final MyServer server = new MyServer("localhost", serverPort, db, users, serverMetricManager);
+        server.run();
+
+        // Setup clients
         clientA_Port = 4000;
         clientB_Port = 5000;
 
         final MetricManager clientMetricManager = new MetricManager("ClientMetric", 1000000);
 
-        // Setup DB
-        mongoDB = MongoClients.create("mongodb://localhost:27017").getDatabase("MyClientIntegTest");
 
         // Setup client A
         final BlockingQueue<String> msgQueueA = new LinkedBlockingQueue<>();
@@ -243,19 +272,8 @@ public class MyClientIntegTest {
     }
 
     @Before
-    public void startServer() {
-        // Setup server
-        final int serverPort = 9000;
-        final MetricManager serverMetricManager = new MetricManager("ServerMetric", 1000000);
-        final MyDatabase db = new MongoDB(mongoDB, serverMetricManager);
-        server = new MyServer("localhost", serverPort, db, serverMetricManager);
-
-        server.run();
-    }
-
-    @After
-    public void stopServer() {
-        server.stop();
+    public void cleanCache() {
+        users.invalidateAll();
     }
 
     private void registerTestSetup() throws Exception {

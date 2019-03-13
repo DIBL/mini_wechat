@@ -62,20 +62,23 @@ public class LogOnHandler implements HttpHandler {
                                                         .append(":")
                                                         .append(logonRequest.getPort()).toString();
 
-            final User prevUser = users.getUnchecked(userName);
-            final User currUser = new User(userName, password, null, null, clientURL, true);
+            final User existingUser = users.getUnchecked(userName);
+            final User newUser = new User(userName, password, null, null, clientURL, true);
 
-            if (prevUser.getName() == null || !password.equals(prevUser.getPassword())) {
+            if (existingUser.getName() == null || !password.equals(existingUser.getPassword())) {
+                // remove dummy entry as this is an invalid request
+                users.invalidate(userName);
+
                 logger.info("User {} and password combination does NOT exist !", userName);
                 logonResponse.setSuccess(false).setFailReason("User " + userName + " password combination does NOT exist !");
                 he.sendResponseHeaders(400, 0);
-            } else if (prevUser.getOnline()) {
+            } else if (existingUser.getOnline()) {
                 logger.info("User {} has already log on !", userName);
                 logonResponse.setSuccess(true);
                 he.sendResponseHeaders(200, 0);
 
-                if (!clientURL.equals(prevUser.getURL())) {
-                    db.update(currUser);
+                if (!clientURL.equals(existingUser.getURL())) {
+                    db.update(newUser);
                     users.invalidate(userName);
                 }
             } else {
@@ -83,7 +86,7 @@ public class LogOnHandler implements HttpHandler {
                 logonResponse.setSuccess(true);
                 he.sendResponseHeaders(200, 0); //2nd arg = 0 means chunked encoding is used, an arbitrary number of bytes may be written
 
-                db.update(currUser);
+                db.update(newUser);
                 users.invalidate(userName);
 
                 // Get the list of unread messages sent to user

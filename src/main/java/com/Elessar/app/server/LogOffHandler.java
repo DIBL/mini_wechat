@@ -52,14 +52,14 @@ public class LogOffHandler implements HttpHandler {
             final LogoffRequest logoffRequest = LogoffRequest.parseFrom(is);
             final LogoffResponse.Builder logoffResponse = LogoffResponse.newBuilder();
             final String userName = logoffRequest.getName();
-            final User prevUser = users.getUnchecked(userName);
-            final User currUser = new User(userName, null, null, null, null, false);
+            final User existingUser = users.getUnchecked(userName);
+            final User newUser = new User(userName, null, null, null, null, false);
 
-            if (prevUser.getName() == null) {
+            if (existingUser.getName() == null) {
                 logger.info("User {} is NOT registered !", userName);
                 logoffResponse.setSuccess(false).setFailReason("User " + userName + " is NOT a registered !");
                 he.sendResponseHeaders(400, 0);
-            } else if (!prevUser.getOnline()) {
+            } else if (!existingUser.getOnline()) {
                 logger.info("User {} has already log off !", userName);
                 logoffResponse.setSuccess(true);
                 he.sendResponseHeaders(200, 0);
@@ -68,9 +68,11 @@ public class LogOffHandler implements HttpHandler {
                 logoffResponse.setSuccess(true);
                 he.sendResponseHeaders(200, 0);
 
-                db.update(currUser);
-                users.invalidate(userName);
+                db.update(newUser);
             }
+
+            // no need to keep user in cache if user log off
+            users.invalidate(userName);
 
             try (final OutputStream os = he.getResponseBody()) {
                 logoffResponse.build().writeTo(os);

@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.Executors;
 
@@ -12,8 +11,6 @@ import com.Elessar.app.util.MetricManager;
 import com.Elessar.database.MyDatabase;
 import com.Elessar.app.util.HttpClient;
 import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -36,29 +33,14 @@ public class MyServer {
     private final LoadingCache<String, User> users;
     private HttpServer server;
 
-    public MyServer(String serverName, int port, MyDatabase db, MetricManager metricManager) {
+    public MyServer(String serverName, int port, MyDatabase db, LoadingCache<String, User> users, MetricManager metricManager) {
         this.serverName = serverName;
         this.port = port;
         this.db = db;
         this.httpClient = new HttpClient(new NetHttpTransport().createRequestFactory());
         this.msgSender = new DirectMsgSender(httpClient);
         this.metricManager = metricManager;
-        this.users = CacheBuilder.newBuilder()
-                .maximumSize(1000)
-                .build(
-                        new CacheLoader<String, User>() {
-                            @Override
-                            public User load(String userName) {
-                                final List<User> users = db.find(new User(userName, null, null, null, null, null));
-                                // Cannot find current user, return an empty user
-                                if (users.isEmpty()) {
-                                    return new User(null, null, null, null, null, null);
-                                }
-
-                                return users.get(0);
-                            }
-                        }
-                );
+        this.users = users;
     }
 
     public void run() {

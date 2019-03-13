@@ -60,9 +60,12 @@ public class P2PMsgHandler implements HttpHandler {
             final P2PMsgResponse.Builder p2pMsgResponse = P2PMsgResponse.newBuilder();
             final String fromUser = p2pMsgRequest.getFromUser();
             final String toUser = p2pMsgRequest.getToUser();
-            final User user = users.getUnchecked(toUser);
+            final User existingUser = users.getUnchecked(toUser);
 
-            if (user.getName() == null) {
+            if (existingUser.getName() == null) {
+                // remove dummy entry as this is an invalid request
+                users.invalidate(toUser);
+
                 logger.info("Can NOT send message to {} because {} is NOT registered !", toUser, toUser);
                 p2pMsgResponse.setSuccess(false)
                               .setIsDelivered(false)
@@ -79,8 +82,8 @@ public class P2PMsgHandler implements HttpHandler {
                     db.insert(messages);
                     logger.debug("Messages stored in database successfully");
 
-                    if (user.getOnline()) {
-                        p2pMsgResponse.mergeFrom(msgSender.send(messages, user.getURL()));
+                    if (existingUser.getOnline()) {
+                        p2pMsgResponse.mergeFrom(msgSender.send(messages, existingUser.getURL()));
 
                         if (p2pMsgResponse.getSuccess() && p2pMsgResponse.getIsDelivered()) {
                             logger.debug("Message successfully sent from {} to {}", fromUser, toUser);

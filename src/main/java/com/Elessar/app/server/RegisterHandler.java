@@ -52,9 +52,9 @@ public class RegisterHandler implements HttpHandler {
             final RegistrationRequest regRequest = RegistrationRequest.parseFrom(is);
             final RegistrationResponse.Builder regResponse = RegistrationResponse.newBuilder();
             final String userName = regRequest.getName();
-            final User prevUser = users.getUnchecked(userName);
+            final User existingUser = users.get(userName);
 
-            if (userName.equals(prevUser.getName())) {
+            if (userName.equals(existingUser.getName())) {
                 logger.error("User name {} already exists", userName);
                 regResponse.setSuccess(false).setFailReason("User Name " + userName + " Exists !");
                 he.sendResponseHeaders(400, 0);
@@ -66,18 +66,19 @@ public class RegisterHandler implements HttpHandler {
                 return ;
             }
 
-            // Do we need to check whether prevUser.getName() is null here?
+            // Do we need to check whether existingUser.getName() is null here?
             try {
-                User currUser = new User(regRequest.getName(),
+                User newUser = new User(regRequest.getName(),
                                          regRequest.getPassword(),
                                          regRequest.getEmail(),
                                          regRequest.getPhoneNumber(),
                                          "",
                                          false);
-                users.put(userName, currUser);
-                db.insert(currUser);
-                logger.info("User {} successfully registered !", userName);
 
+                db.insert(newUser);
+                users.put(userName, newUser);
+
+                logger.info("User {} successfully registered !", userName);
                 regResponse.setSuccess(true);
                 he.sendResponseHeaders(200, 0);
 
@@ -87,6 +88,14 @@ public class RegisterHandler implements HttpHandler {
                 he.sendResponseHeaders(400, 0);
             }
 
+            try (final OutputStream os = he.getResponseBody()){
+                regResponse.build().writeTo(os);
+            }
+        } catch (Exception e) {
+            final RegistrationResponse.Builder regResponse = RegistrationResponse.newBuilder();
+            System.out.println(e.getMessage());
+            regResponse.setSuccess(false).setFailReason(e.getMessage());
+            he.sendResponseHeaders(400, 0);
             try (final OutputStream os = he.getResponseBody()){
                 regResponse.build().writeTo(os);
             }
