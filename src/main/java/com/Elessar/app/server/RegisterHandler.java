@@ -52,7 +52,7 @@ public class RegisterHandler implements HttpHandler {
             final RegistrationRequest regRequest = RegistrationRequest.parseFrom(is);
             final RegistrationResponse.Builder regResponse = RegistrationResponse.newBuilder();
             final String userName = regRequest.getName();
-            final User existingUser = users.get(userName);
+            final User existingUser = users.getUnchecked(userName);
 
             if (userName.equals(existingUser.getName())) {
                 logger.error("User name {} already exists", userName);
@@ -88,14 +88,6 @@ public class RegisterHandler implements HttpHandler {
                 he.sendResponseHeaders(400, 0);
             }
 
-            try (final OutputStream os = he.getResponseBody()){
-                regResponse.build().writeTo(os);
-            }
-        } catch (Exception e) {
-            final RegistrationResponse.Builder regResponse = RegistrationResponse.newBuilder();
-            System.out.println(e.getMessage());
-            regResponse.setSuccess(false).setFailReason(e.getMessage());
-            he.sendResponseHeaders(400, 0);
             try (final OutputStream os = he.getResponseBody()){
                 regResponse.build().writeTo(os);
             }

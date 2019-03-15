@@ -63,11 +63,13 @@ public class LogOnHandler implements HttpHandler {
                                                         .append(logonRequest.getPort()).toString();
 
             final User existingUser = users.getUnchecked(userName);
-            final User newUser = new User(userName, password, null, null, clientURL, true);
+            final User newUser = new User(userName, password, existingUser.getEmail(), existingUser.getPhoneNumber(), clientURL, true);
 
             if (existingUser.getName() == null || !password.equals(existingUser.getPassword())) {
                 // remove dummy entry as this is an invalid request
-                users.invalidate(userName);
+                if (existingUser.getName() == null) {
+                    users.invalidate(userName);
+                }
 
                 logger.info("User {} and password combination does NOT exist !", userName);
                 logonResponse.setSuccess(false).setFailReason("User " + userName + " password combination does NOT exist !");
@@ -79,7 +81,7 @@ public class LogOnHandler implements HttpHandler {
 
                 if (!clientURL.equals(existingUser.getURL())) {
                     db.update(newUser);
-                    users.invalidate(userName);
+                    users.put(userName, newUser);
                 }
             } else {
                 logger.info("User {} successfully log on !", userName);
@@ -87,7 +89,7 @@ public class LogOnHandler implements HttpHandler {
                 he.sendResponseHeaders(200, 0); //2nd arg = 0 means chunked encoding is used, an arbitrary number of bytes may be written
 
                 db.update(newUser);
-                users.invalidate(userName);
+                users.put(userName, newUser);
 
                 // Get the list of unread messages sent to user
                 List<Message> messages = db.find(new Message(null, userName, null, null, false));
