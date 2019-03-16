@@ -1,0 +1,20 @@
+# User name
+Oulu Xu
+
+# Password
+ouluxu
+
+# Port number
+6000
+
+# Users to send messages
+Shuai Ni, Yifu Sun, Zhi Xu, Yang Tian, Wenji Liu, Shuai Hu, Fangshi Li, Feiyi Wang, Jing Li
+
+# Number of messages to send for each user
+1000
+
+# Log off times during sending messages
+2
+
+# Log off wait time before back online (seconds)
+3

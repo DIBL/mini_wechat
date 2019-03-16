@@ -1,11 +1,19 @@
 package com.Elessar.app;
 
 import com.Elessar.app.client.MyClient;
+import com.Elessar.app.client.MyClientServer;
 import com.Elessar.app.util.MetricManager;
 import com.Elessar.proto.P2Pmsg.P2PMsgResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Created by Hans on 2/27/19.
@@ -15,84 +23,136 @@ public class PerfTestMain {
 
     /**
      *
-     * @param args [0] username for user1
-     *             [1] password for user1
-     *             [2] port number for user1
-     *             [3] username for user2
-     *             [4] password for user2
-     *             [5] port number for user2
-     *             [6] total number of messages to send
+     * @param args [0] path to config file
      */
     public static void main(String[] args) throws Exception {
-        final String serverURL = new StringBuilder().append("http://127.0.0.1:9000").toString();
+        String username = "";
+        String password = "";
+        String[] toUsers = new String[0];
+        int port = -1;
+        int msgCountPerUser = -1;
+        int logOffCount = -1;
+        long waitTime = -1; // in seconds
+
+        try (final BufferedReader reader = new BufferedReader(new FileReader(args[0]))) {
+            String line = "";
+            int lineCount = 0;
+
+            while ((line = reader.readLine()) != null) {
+                if (line.equals("") || line.startsWith("#")) {
+                    continue;
+                }
+
+                switch (lineCount) {
+                    case 0:
+                        username = line;
+                        break;
+                    case 1:
+                        password = line;
+                        break;
+                    case 2:
+                        port = Integer.valueOf(line);
+                        break;
+                    case 3:
+                        toUsers = line.split("\\s*,\\s*");
+                        break;
+                    case 4:
+                        msgCountPerUser = Integer.valueOf(line);
+                        break;
+                    case 5:
+                        logOffCount = Integer.valueOf(line);
+                        break;
+                    case 6:
+                        waitTime = Long.valueOf(line);
+                        break;
+                    default:
+                        break;
+                }
+
+                lineCount += 1;
+            }
+        }
+
+        if (username.equals("") || password.equals("") || toUsers.length == 0 || port == -1 || msgCountPerUser == -1
+            || logOffCount == -1 || waitTime == -1) {
+
+            logger.error("Fail to initialize using config settings");
+            throw new RuntimeException("Fail to initialize using config settings");
+        }
+
+        // Setup client server
         final MetricManager metricManager = new MetricManager("ClientMetric", 100);
+        final BlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
 
-        final String username1 = args[0];
-        final String password1 = args[1];
-        final String phone1 = getRandomNum(10);
-        final int port1 = Integer.valueOf(args[2]);
+        final MyClientServer clientServer = new MyClientServer("localhost", port, messageQueue, metricManager);
+        clientServer.run();
 
-        final String username2 = args[3];
-        final String password2 = args[4];
-        final String phone2 = getRandomNum(10);
-        final int port2 = Integer.valueOf(args[5]);
 
-        final int msgRequestCount = Integer.valueOf(args[6]);
-        int messageCount = msgRequestCount;
+        // Setup client
+        final String serverURL = new StringBuilder().append("http://127.0.0.1:9000").toString();
+        final MyClient client = new MyClient(serverURL, metricManager);
+        final String phone = getRandomNum(10);
 
-        final MyClient client1 = new MyClient(serverURL, metricManager);
-        final MyClient client2 = new MyClient(serverURL, metricManager);
+        client.register(username, password, username + "@163.com", phone);
 
-        client1.register(username1, password1, username1 + "@163.com", phone1);
-        client2.register(username2, password2, username2 + "@163.com", phone2);
+        // Sleep 5 sec, wait other users to register
+        Thread.sleep(5000L);
 
-        client1.logOn(username1, password1, port1);
-        client2.logOn(username2, password2, port2);
+        client.logOn(username, password, port);
 
         final Random r = new Random();
         int failRequestCount = 0;
 
-        while (messageCount > 0) {
-            int msgCount1 = r.nextInt(5) + 1;
-            while (messageCount > 0 && msgCount1 > 0) {
-                try {
-                    P2PMsgResponse p2PMsgResponse1 = client1.sendMessage(username1, username2, getRandomStr(10));
+        final int totalMsgCount = msgCountPerUser * toUsers.length;
+        logOffCount = Math.min(logOffCount, totalMsgCount);
 
-                    if (!p2PMsgResponse1.getSuccess()) {
-                        failRequestCount += 1;
-                        logger.error("Failed to send message from {} to {}, because {}", username1, username2, p2PMsgResponse1.getFailReason());
-                    }
+        final Set<Integer> logOffPoints = new HashSet<>();
+        while (logOffCount > 0) {
+            final int point = r.nextInt(totalMsgCount);
 
-                } catch (Exception e) {
-                    failRequestCount += 1;
-                    logger.error("Caught exception during sending message from {} to {}: {}", username1, username2, e.getMessage());
-                }
-
-                msgCount1 -= 1;
-                messageCount -= 1;
+            if (logOffPoints.contains(point)) {
+                continue;
             }
 
-            int msgCount2 = r.nextInt(5) + 1;
-            while (messageCount > 0 && msgCount2 > 0) {
-                try {
-                    P2PMsgResponse p2PMsgResponse2 = client2.sendMessage(username2, username1, getRandomStr(10));
+            logOffPoints.add(point);
+            logOffCount -= 1;
+        }
 
-                    if (!p2PMsgResponse2.getSuccess()) {
+        for (int i = 0; i < toUsers.length; i++) {
+            final String toUser = toUsers[i];
+            int count = 0;
+
+            while (count < msgCountPerUser) {
+                final int sentCount = i * msgCountPerUser + count;
+                if (logOffPoints.contains(sentCount)) {
+                    try {
+                        client.logOff(username);
+                        Thread.sleep(waitTime * 1000);
+                        client.logOn(username, password, port);
+                    } catch (Exception e) {
+                        logger.error("Caught exception during {} log on/log off: {}", username, e.getMessage());
+                    }
+                }
+
+                try {
+                    final String text = getRandomStr(10);
+                    P2PMsgResponse p2PMsgResponse = client.sendMessage(username, toUser, text);
+
+                    if (!p2PMsgResponse.getSuccess()) {
                         failRequestCount += 1;
-                        logger.error("Failed to send message from {} to {}, because {}", username2, username1, p2PMsgResponse2.getFailReason());
+                        logger.error("Failed to send message from {} to {}, because {}", username, toUser, p2PMsgResponse.getFailReason());
                     }
 
                 } catch (Exception e) {
                     failRequestCount += 1;
-                    logger.error("Caught exception during sending message from {} to {}: {}", username2, username1, e.getMessage());
+                    logger.error("Caught exception during sending message from {} to {}: {}", username, toUser, e.getMessage());
                 }
 
-                msgCount2 -= 1;
-                messageCount -= 1;
+                count += 1;
             }
         }
 
-        final double failRequestRate = failRequestCount * 1.0 / msgRequestCount;
+        final double failRequestRate = failRequestCount * 1.0 / totalMsgCount;
         logger.info("Total failed p2p message request number is {} and failed rate is {}", failRequestCount, failRequestRate);
     }
 

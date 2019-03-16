@@ -1,0 +1,20 @@
+# User name
+Jing Li
+
+# Password
+jingli
+
+# Port number
+6500
+
+# Users to send messages
+Shuai Ni, Yifu Sun, Zhi Xu, Yang Tian, Wenji Liu, Shuai Hu, Fangshi Li, Feiyi Wang, Oulu Xu
+
+# Number of messages to send for each user
+1000
+
+# Log off times during sending messages
+2
+
+# Log off wait time before back online (seconds)
+3
