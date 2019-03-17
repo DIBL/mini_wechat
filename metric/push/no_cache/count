@@ -1,15 +1,19 @@
-# 10 people, 45000 messages total
+# 10 people, 90000 messages total
+# Commit hash: a744dec909eeee1873b22e25e2f7baad1c3dd983
 # Operation, Count
-# Commit hash: 15f2596f363566975b6f0540d92f7871191c1b94
 
-client.logon	90.0
-client.p2pMsg	40725.0
-client.register	90.0
-clientServer.p2pMsg	44440.0
-db.messages.insertMany	44979.0
-db.messages.update	44979.0
-db.users.find	44979.0
-db.users.update	90.0
-server.logon	90.0
-server.p2pMsg	44977.0
-server.register	90.0
+client.logoff	20.0
+client.logon	30.0
+client.p2pMsg	89637.0
+client.register	10.0
+clientServer.p2pMsg	80791.0
+db.messages.find	30.0
+db.messages.insertMany	89981.0
+db.messages.update	80782.0
+db.users.find	89981.0
+db.users.insertOne	10.0
+db.users.update	50.0
+server.logoff	20.0
+server.logon	30.0
+server.p2pMsg	89980.0
+server.register	10.0
