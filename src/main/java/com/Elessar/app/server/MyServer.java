@@ -11,6 +11,7 @@ import com.Elessar.app.util.MetricManager;
 import com.Elessar.database.MyDatabase;
 import com.Elessar.app.util.HttpClient;
 import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.common.cache.LoadingCache;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import com.sun.net.httpserver.HttpExchange;
@@ -29,31 +30,40 @@ public class MyServer {
     private final HttpClient httpClient;
     private final MsgSender msgSender;
     private final MetricManager metricManager;
+    private final LoadingCache<String, User> users;
+    private HttpServer server;
 
-    public MyServer(String serverName, int port, MyDatabase db, MetricManager metricManager) {
+    public MyServer(String serverName, int port, MyDatabase db, LoadingCache<String, User> users, MetricManager metricManager) {
         this.serverName = serverName;
         this.port = port;
         this.db = db;
         this.httpClient = new HttpClient(new NetHttpTransport().createRequestFactory());
         this.msgSender = new DirectMsgSender(httpClient);
         this.metricManager = metricManager;
+        this.users = users;
     }
 
     public void run() {
         try {
-            final HttpServer server = HttpServer.create(new InetSocketAddress(serverName, port), 0);
+            server = HttpServer.create(new InetSocketAddress(serverName, port), 0);
             server.createContext("/", new RootHandler());
             server.createContext("/echo", new EchoHandler());
-            server.createContext("/register", new RegisterHandler(db, metricManager));
-            server.createContext("/logon", new LogOnHandler(db, msgSender, metricManager));
-            server.createContext("/logoff", new LogOffHandler(db, metricManager));
-            server.createContext("/p2pMessage", new P2PMsgHandler(db, httpClient, msgSender, metricManager));
+            server.createContext("/register", new RegisterHandler(db, users, metricManager));
+            server.createContext("/logon", new LogOnHandler(db, msgSender, users, metricManager));
+            server.createContext("/logoff", new LogOffHandler(db, users, metricManager));
+            server.createContext("/p2pMessage", new P2PMsgHandler(db, httpClient, msgSender, users, metricManager));
             server.setExecutor(Executors.newCachedThreadPool());
             server.start();
             logger.info("Server started at port {}", port);
+
+
         } catch (IOException e) {
             logger.fatal("Caught exception during server startup: {}", e.getMessage());
         }
+    }
+
+    public void stop() {
+        server.stop(0);
     }
 
     private static class RootHandler implements HttpHandler {

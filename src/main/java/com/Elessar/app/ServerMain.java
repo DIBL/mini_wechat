@@ -1,12 +1,18 @@
 package com.Elessar.app;
 
 import com.Elessar.app.server.MyServer;
+import com.Elessar.app.server.User;
 import com.Elessar.app.util.MetricManager;
 import com.Elessar.database.MongoDB;
 import com.Elessar.database.MyDatabase;
 import com.example.tutorial.Addressbook.Person;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.mongodb.client.MongoClients;
 import java.io.*;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
@@ -22,7 +28,25 @@ public class ServerMain {
         mongoLogger.setLevel(Level.SEVERE); // e.g. or Log.WARNING, etc.
         final MetricManager metricManager = new MetricManager("ServerMetric", 100);
         final MyDatabase db = new MongoDB(MongoClients.create("mongodb://localhost:27017").getDatabase("myDB"), metricManager);
-        final MyServer server = new MyServer("localhost", 9000, db, metricManager);
+        final LoadingCache<String, User> users = CacheBuilder.newBuilder()
+                    .maximumSize(1000)
+                    .expireAfterAccess(60, TimeUnit.SECONDS)
+                    .build(
+                            new CacheLoader<String, User>() {
+                                @Override
+                                public User load(String userName) {
+                                    final List<User> users = db.find(new User(userName, null, null, null, null, null));
+                                    // Cannot find current user, return an empty user
+                                    if (users.isEmpty()) {
+                                        return new User(null, null, null, null, null, null);
+                                    }
+
+                                    return users.get(0);
+                                }
+                            }
+                    );
+
+        final MyServer server = new MyServer("localhost", 9000, db, users, metricManager);
         server.run();
         //testProtoBuf();
     }

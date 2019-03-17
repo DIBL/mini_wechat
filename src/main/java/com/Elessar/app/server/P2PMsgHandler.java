@@ -7,6 +7,7 @@ import com.Elessar.database.MyDatabase;
 import com.Elessar.proto.P2Pmsg;
 import com.Elessar.proto.P2Pmsg.P2PMsgRequest;
 import com.Elessar.proto.P2Pmsg.P2PMsgResponse;
+import com.google.common.cache.LoadingCache;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.apache.logging.log4j.LogManager;
@@ -26,12 +27,14 @@ public class P2PMsgHandler implements HttpHandler {
     private final MyDatabase db;
     private final HttpClient httpClient;
     private final MsgSender msgSender;
+    private final LoadingCache<String, User> users;
     private final MetricManager metricManager;
 
-    public P2PMsgHandler(MyDatabase db, HttpClient httpClient, MsgSender msgSender, MetricManager metricManager) {
+    public P2PMsgHandler(MyDatabase db, HttpClient httpClient, MsgSender msgSender, LoadingCache<String, User> users, MetricManager metricManager) {
         this.db = db;
         this.httpClient = httpClient;
         this.msgSender = msgSender;
+        this.users = users;
         this.metricManager = metricManager;
     }
 
@@ -57,17 +60,18 @@ public class P2PMsgHandler implements HttpHandler {
             final P2PMsgResponse.Builder p2pMsgResponse = P2PMsgResponse.newBuilder();
             final String fromUser = p2pMsgRequest.getFromUser();
             final String toUser = p2pMsgRequest.getToUser();
+            final User existingUser = users.getUnchecked(toUser);
 
-            List<User> receivers = db.find(new User(toUser, null, null, null, null, null));
+            if (existingUser.getName() == null) {
+                // remove dummy entry as this is an invalid request
+                users.invalidate(toUser);
 
-            if (receivers.isEmpty()) {
                 logger.info("Can NOT send message to {} because {} is NOT registered !", toUser, toUser);
                 p2pMsgResponse.setSuccess(false)
                               .setIsDelivered(false)
                               .setFailReason(toUser + " is NOT registered");
                 he.sendResponseHeaders(400, 0);
             } else {
-                User receiver = receivers.get(0);
 
                 List<Message> messages = new ArrayList<>();
                 for (P2Pmsg.Message msg : p2pMsgRequest.getMessageList()) {
@@ -78,8 +82,8 @@ public class P2PMsgHandler implements HttpHandler {
                     db.insert(messages);
                     logger.debug("Messages stored in database successfully");
 
-                    if (receiver.getOnline()) {
-                        p2pMsgResponse.mergeFrom(msgSender.send(messages, receiver.getURL()));
+                    if (existingUser.getOnline()) {
+                        p2pMsgResponse.mergeFrom(msgSender.send(messages, existingUser.getURL()));
 
                         if (p2pMsgResponse.getSuccess() && p2pMsgResponse.getIsDelivered()) {
                             logger.debug("Message successfully sent from {} to {}", fromUser, toUser);
