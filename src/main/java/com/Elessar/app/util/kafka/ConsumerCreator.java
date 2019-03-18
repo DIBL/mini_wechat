@@ -13,7 +13,7 @@ import java.util.Properties;
  * Created by Hans on 3/17/19.
  */
 public class ConsumerCreator {
-    public static Consumer<Long, String> create(String topic) {
+    public static Consumer create(String topic) {
         Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KafkaConstants.KAFKA_BROKERS);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, KafkaConstants.GROUP_ID_CONFIG);
@@ -23,7 +23,7 @@ public class ConsumerCreator {
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, KafkaConstants.OFFSET_RESET_EARLIER);
 
-        Consumer<Long, String> consumer = new KafkaConsumer<>(props);
+        Consumer consumer = new KafkaConsumer(props);
         consumer.subscribe(Collections.singletonList(topic));
         return consumer;
     }
