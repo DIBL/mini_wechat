@@ -1,8 +1,13 @@
 package com.Elessar.app.util;
 
+import com.Elessar.app.server.KafkaMsgSender;
+import com.Elessar.app.server.Message;
+import com.Elessar.app.server.MsgSender;
 import com.Elessar.app.util.kafka.ConsumerCreator;
 import com.Elessar.app.util.kafka.KafkaConstants;
 import com.Elessar.app.util.kafka.ProducerCreator;
+import com.Elessar.proto.P2Pmsg;
+import com.Elessar.proto.P2Pmsg.P2PMsgRequest;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -21,6 +26,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.Random;
 
 /**
  * Created by Hans on 3/17/19.
@@ -42,41 +48,41 @@ public class KafkaTest {
     @Test
     public void sendMsgTest() {
         final int msgCountToSend = 10;
-        final Producer<Long, String> producer = ProducerCreator.create();
+        final MsgSender msgSender = new KafkaMsgSender();
         final Consumer<Long, String> consumer = ConsumerCreator.create(testTopic);
 
         // send messages
+        final List<Message> messages = new ArrayList<>();
+        final P2PMsgRequest.Builder p2pMsgRequest = P2PMsgRequest.newBuilder();
+
         for (int i = 0; i < msgCountToSend; i++) {
-            final ProducerRecord<Long, String> record = new ProducerRecord<>(testTopic, "Message " + i);
+            final Message message = new Message("Shuai Ni", "Feiyi Wang", getRandomStr(10), (long) 0, false);
 
-            try {
-                final RecordMetadata metadata = producer.send(record).get();
-                System.out.println("Message " + i + " sent to partition " + metadata.partition() + " with offset " + metadata.offset());
+            messages.add(message);
+            p2pMsgRequest.setFromUser(message.getFromUser())
+                         .setToUser(message.getToUser())
+                         .addMessage(P2Pmsg.Message.newBuilder()
+                                 .setText(message.getText())
+                                 .setTimestamp(message.getTimestamp()));
+        }
 
-            } catch (Exception e) {
-                System.out.printf("Caught exception during sending message to Kafka broker: %s\n", e.getMessage());
-            }
+        try {
+            msgSender.send(messages, testTopic);
+        } catch (Exception e) {
+            System.out.printf("Caught exception during sending message to Kafka broker: %s\n", e.getMessage());
+            assert(false);
         }
 
         // retrieve messages
-        int msgCountReceived = 0;
-        int noMsgFound = 0;
+        final ConsumerRecords<Long, String> consumerRecords = consumer.poll(Duration.ofSeconds((long) 1));
 
-        while (msgCountReceived < msgCountToSend && noMsgFound < KafkaConstants.MAX_NO_MESSAGE_FOUND_COUNT) {
-            final ConsumerRecords<Long, String> consumerRecords = consumer.poll(Duration.ofSeconds((long) 1));
-            if (consumerRecords.count() == 0) {
-                noMsgFound += 1;
-            }
+        assertEquals(1, consumerRecords.count());
 
-            for (ConsumerRecord<Long, String> record : consumerRecords) {
-                System.out.println(record.value() + " received from partition " + record.partition() + " with offset " + record.offset());
-                assertEquals("Message " + msgCountReceived, record.value());
-            }
-
-            msgCountReceived += 1;
-            consumer.commitSync();
+        for (ConsumerRecord<Long, String> record : consumerRecords) {
+            assertEquals(p2pMsgRequest.build().toString(), record.value());
         }
 
+        consumer.commitSync();
         consumer.close();
     }
 
@@ -100,6 +106,18 @@ public class KafkaTest {
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
 
         return props;
+    }
+
+    private static String getRandomStr(int length) {
+        final StringBuilder sb = new StringBuilder();
+        final Random r = new Random();
+
+        for (int i = 0; i < length; i++) {
+            final int num = r.nextInt(26);
+            sb.append((char) ('a' + num));
+        }
+
+        return sb.toString();
     }
 
 }

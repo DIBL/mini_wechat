@@ -25,8 +25,8 @@ public class DirectMsgSender implements MsgSender {
     @Override
     public P2PMsgResponse send(List<Message> messages, String URL) throws Exception {
         final P2PMsgRequest.Builder p2pMsgRequest = P2PMsgRequest.newBuilder();
-        String fromUser = messages.get(0).getFromUser();
-        String toUser = messages.get(0).getToUser();
+        final String fromUser = messages.get(0).getFromUser();
+        final String toUser = messages.get(0).getToUser();
 
         for (Message message : messages) {
             p2pMsgRequest.setFromUser(fromUser)
