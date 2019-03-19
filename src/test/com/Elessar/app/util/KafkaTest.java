@@ -5,7 +5,6 @@ import com.Elessar.app.server.Message;
 import com.Elessar.app.server.MsgSender;
 import com.Elessar.app.util.kafka.ConsumerCreator;
 import com.Elessar.app.util.kafka.KafkaConstants;
-import com.Elessar.app.util.kafka.ProducerCreator;
 import com.Elessar.proto.P2Pmsg;
 import com.Elessar.proto.P2Pmsg.P2PMsgRequest;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -14,9 +13,7 @@ import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.After;
 import org.junit.Before;
@@ -49,7 +46,7 @@ public class KafkaTest {
     public void sendMsgTest() {
         final int msgCountToSend = 10;
         final MsgSender msgSender = new KafkaMsgSender();
-        final Consumer<Long, String> consumer = ConsumerCreator.create(testTopic);
+        final Consumer<Long, String> consumer = ConsumerCreator.create(testTopic, "Feiyi Wang", new LongDeserializer(), new StringDeserializer());
 
         // send messages
         final List<Message> messages = new ArrayList<>();

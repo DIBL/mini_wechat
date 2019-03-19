@@ -28,10 +28,10 @@ public class DirectMsgSender implements MsgSender {
         final String fromUser = messages.get(0).getFromUser();
         final String toUser = messages.get(0).getToUser();
 
+        p2pMsgRequest.setFromUser(fromUser).setToUser(toUser);
+
         for (Message message : messages) {
-            p2pMsgRequest.setFromUser(fromUser)
-                         .setToUser(toUser)
-                         .addMessage(P2Pmsg.Message.newBuilder()
+            p2pMsgRequest.addMessage(P2Pmsg.Message.newBuilder()
                                  .setText(message.getText())
                                  .setTimestamp(message.getTimestamp()));
         }
