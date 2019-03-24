@@ -21,8 +21,8 @@ public class KafkaMsgSender implements MsgSender {
     private final Producer<Long, String> producer;
 
     public KafkaMsgSender() {
-        Serializer<Long> keySerializer = new LongSerializer();
-        Serializer<String> valueSerializer = new StringSerializer();
+        final Serializer<Long> keySerializer = new LongSerializer();
+        final Serializer<String> valueSerializer = new StringSerializer();
         producer = ProducerCreator.create(keySerializer, valueSerializer);
     }
 
