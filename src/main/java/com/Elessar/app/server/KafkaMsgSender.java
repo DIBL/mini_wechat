@@ -40,13 +40,14 @@ public class KafkaMsgSender implements MsgSender {
                                 .setTimestamp(message.getTimestamp()));
         }
 
+        topic = topic.replaceAll("\\s", "");
         final ProducerRecord<Long, String> record = new ProducerRecord<>(topic, p2pMsgRequest.toString());
         final RecordMetadata metadata = producer.send(record).get();
 
         logger.trace("Message sent to Kafka server at topic " + topic + " partition " + metadata.partition() + " with offset " + metadata.offset());
 
         final P2PMsgResponse.Builder p2pMsgResponse = P2PMsgResponse.newBuilder();
-        p2pMsgResponse.setSuccess(true).setIsDelivered(false);
+        p2pMsgResponse.setSuccess(true).setIsDelivered(true);
 
         return p2pMsgResponse.build();
     }

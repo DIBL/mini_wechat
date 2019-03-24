@@ -82,17 +82,10 @@ public class MyClientIntegTest {
 
 
         // Setup client A
-        final BlockingQueue<String> msgQueueA = new LinkedBlockingQueue<>();
         clientA = new MyClient(serverURL, clientMetricManager);
-        final MyClientServer clientA_Server = new MyClientServer("localhost", clientA_Port, msgQueueA, clientMetricManager);
 
         // Setup client B
-        final BlockingQueue<String> msgQueueB = new LinkedBlockingQueue<>();
         clientB = new MyClient(serverURL, clientMetricManager);
-        final MyClientServer clientB_Server = new MyClientServer("localhost", clientB_Port, msgQueueB, clientMetricManager);
-
-        clientA_Server.run();
-        clientB_Server.run();
     }
 
     @Test

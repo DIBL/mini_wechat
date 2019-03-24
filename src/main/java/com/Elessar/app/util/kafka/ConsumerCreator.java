@@ -14,7 +14,7 @@ import java.util.Properties;
  * Created by Hans on 3/17/19.
  */
 public class ConsumerCreator {
-    public static <K, V> Consumer<K, V> create(String topic, String username, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
+    public static <K, V> Consumer<K, V> create(String username, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
         Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         props.put(ConsumerConfig.GROUP_ID_CONFIG, username);
@@ -23,7 +23,7 @@ public class ConsumerCreator {
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
         Consumer<K, V> consumer = new KafkaConsumer(props, keyDeserializer, valueDeserializer);
-        consumer.subscribe(Collections.singletonList(topic));
+        consumer.subscribe(Collections.singletonList(username));    // use username as topic
 
         return consumer;
     }

@@ -83,7 +83,7 @@ public class P2PMsgHandler implements HttpHandler {
                     logger.debug("Messages stored in database successfully");
 
                     if (existingUser.getOnline()) {
-                        p2pMsgResponse.mergeFrom(msgSender.send(messages, existingUser.getURL()));
+                        p2pMsgResponse.mergeFrom(msgSender.send(messages, existingUser.getName()));
 
                         if (p2pMsgResponse.getSuccess() && p2pMsgResponse.getIsDelivered()) {
                             logger.debug("Message successfully sent from {} to {}", fromUser, toUser);

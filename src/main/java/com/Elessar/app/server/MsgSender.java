@@ -9,5 +9,5 @@ import java.util.List;
  */
 public interface MsgSender {
 
-    P2PMsgResponse send(List<Message> messages, String URL) throws Exception;
+    P2PMsgResponse send(List<Message> messages, String toUser) throws Exception;
 }

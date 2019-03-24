@@ -93,7 +93,7 @@ public class LogOnHandler implements HttpHandler {
 
                 // Get the list of unread messages sent to user
                 List<Message> messages = db.find(new Message(null, userName, null, null, false));
-                sendMessages(messages, clientURL);
+                sendMessages(messages, userName);
             }
 
             try (final OutputStream os = he.getResponseBody()) {
@@ -104,13 +104,13 @@ public class LogOnHandler implements HttpHandler {
         metric.timerStop();
     }
 
-    private void sendMessages(List<Message> messages, String clientURL) {
+    private void sendMessages(List<Message> messages, String toUser) {
         if (messages.isEmpty()) {
             return;
         }
 
         try {
-            P2PMsgResponse p2pMsgResponse = msgSender.send(messages, clientURL);
+            P2PMsgResponse p2pMsgResponse = msgSender.send(messages, toUser);
 
             if (p2pMsgResponse.getSuccess() && p2pMsgResponse.getIsDelivered()) {
                 db.update(messages, new Message(null, null, null, null, true));

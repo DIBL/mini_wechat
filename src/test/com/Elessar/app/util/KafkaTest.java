@@ -1,5 +1,7 @@
 package com.Elessar.app.util;
 
+import com.Elessar.app.client.KafkaMsgQueue;
+import com.Elessar.app.client.MsgQueue;
 import com.Elessar.app.server.KafkaMsgSender;
 import com.Elessar.app.server.Message;
 import com.Elessar.app.server.MsgSender;
@@ -29,14 +31,17 @@ import java.util.Random;
  * Created by Hans on 3/17/19.
  */
 public class KafkaTest {
-    private static final String testTopic = "Test";
+    private static final String testTopicA = "testReceiver_A";
+    private static final String testTopicB = "testReceiver_B";
 
     @Before
     public void setUp() throws Exception {
         final AdminClient adminClient = AdminClient.create(getAdminProps());
-        NewTopic newTopic = new NewTopic(testTopic, 1, (short) 1);
-        List<NewTopic> newTopics = new ArrayList<>();
-        newTopics.add(newTopic);
+        final NewTopic newTopicA = new NewTopic(testTopicA, 1, (short) 1);
+        final NewTopic newTopicB = new NewTopic(testTopicB, 1, (short) 1);
+        final List<NewTopic> newTopics = new ArrayList<>();
+        newTopics.add(newTopicA);
+        newTopics.add(newTopicB);
 
         adminClient.createTopics(newTopics);
         adminClient.close();
@@ -46,48 +51,50 @@ public class KafkaTest {
     public void sendMsgTest() {
         final int msgCountToSend = 10;
         final MsgSender msgSender = new KafkaMsgSender();
-        final Consumer<Long, String> consumer = ConsumerCreator.create(testTopic, "Feiyi Wang", new LongDeserializer(), new StringDeserializer());
+        final MsgQueue msgQueue = new KafkaMsgQueue(testTopicB);
+        final P2PMsgRequest.Builder p2pMsgRequest = P2PMsgRequest.newBuilder();
+
+        p2pMsgRequest.setFromUser(testTopicA).setToUser(testTopicB);
 
         // send messages
         final List<Message> messages = new ArrayList<>();
-        final P2PMsgRequest.Builder p2pMsgRequest = P2PMsgRequest.newBuilder();
-
         for (int i = 0; i < msgCountToSend; i++) {
-            final Message message = new Message("Shuai Ni", "Feiyi Wang", getRandomStr(10), (long) 0, false);
-
+            Message message = new Message(testTopicA, testTopicB, getRandomStr(10), (long) 0, false);
             messages.add(message);
-            p2pMsgRequest.setFromUser(message.getFromUser())
-                         .setToUser(message.getToUser())
-                         .addMessage(P2Pmsg.Message.newBuilder()
-                                 .setText(message.getText())
-                                 .setTimestamp(message.getTimestamp()));
+            p2pMsgRequest.addMessage(P2Pmsg.Message.newBuilder()
+                    .setText(message.getText())
+                    .setTimestamp(message.getTimestamp()));
         }
 
         try {
-            msgSender.send(messages, testTopic);
+            msgSender.send(messages, testTopicB);
+
         } catch (Exception e) {
             System.out.printf("Caught exception during sending message to Kafka broker: %s\n", e.getMessage());
             assert(false);
         }
 
         // retrieve messages
-        final ConsumerRecords<Long, String> consumerRecords = consumer.poll(Duration.ofSeconds((long) 1));
+        try {
+            final List<String> messagesList = msgQueue.poll(Duration.ofSeconds(1L));
 
-        assertEquals(1, consumerRecords.count());
+            assertEquals(1, messagesList.size());
 
-        for (ConsumerRecord<Long, String> record : consumerRecords) {
-            assertEquals(p2pMsgRequest.build().toString(), record.value());
+            for (String message : messagesList) {
+                assertEquals(p2pMsgRequest.build().toString(), message);
+            }
+        } catch (Exception e) {
+            System.out.printf("Caught exception during receiving messages: %s\n", e.getMessage());
+            assert(false);
         }
-
-        consumer.commitSync();
-        consumer.close();
     }
 
     @After
     public void tearDown() throws Exception {
         final AdminClient adminClient = AdminClient.create(getAdminProps());
-        List<String> Topics = new ArrayList<>();
-        Topics.add(testTopic);
+        final List<String> Topics = new ArrayList<>();
+        Topics.add(testTopicA);
+        Topics.add(testTopicB);
 
         adminClient.deleteTopics(Topics);
         adminClient.close();
