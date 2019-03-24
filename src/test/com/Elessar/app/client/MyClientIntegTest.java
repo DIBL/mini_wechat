@@ -45,6 +45,7 @@ public class MyClientIntegTest {
         // Setup DB
         mongoDB = MongoClients.create("mongodb://localhost:27017").getDatabase("MyClientIntegTest");
         final MetricManager serverMetricManager = new MetricManager("ServerMetric", 1000000);
+        final MetricManager clientMetricManager = new MetricManager("ClientMetric", 1000000);
         final MyDatabase db = new MongoDB(mongoDB, serverMetricManager);
 
         // Setup server
@@ -74,17 +75,7 @@ public class MyClientIntegTest {
         final MyServer server = new MyServer("localhost", serverPort, db, users, serverMetricManager);
         server.run();
 
-        // Setup clients
-        clientA_Port = 4000;
-        clientB_Port = 5000;
-
-        final MetricManager clientMetricManager = new MetricManager("ClientMetric", 1000000);
-
-
-        // Setup client A
         clientA = new MyClient(serverURL, clientMetricManager);
-
-        // Setup client B
         clientB = new MyClient(serverURL, clientMetricManager);
     }
 
