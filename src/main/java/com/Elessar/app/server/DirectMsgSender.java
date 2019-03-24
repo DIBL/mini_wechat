@@ -1,6 +1,8 @@
 package com.Elessar.app.server;
 
 import com.Elessar.app.util.HttpClient;
+import com.Elessar.app.util.Metric;
+import com.Elessar.app.util.MetricManager;
 import com.Elessar.proto.P2Pmsg;
 import com.Elessar.proto.P2Pmsg.P2PMsgRequest;
 import com.Elessar.proto.P2Pmsg.P2PMsgResponse;
@@ -16,14 +18,19 @@ import java.util.List;
  */
 public class DirectMsgSender implements MsgSender {
     private static final Logger logger = LogManager.getLogger(DirectMsgSender.class);
+    private final MetricManager metricManager;
     private final HttpClient httpClient;
 
-    public DirectMsgSender(HttpClient httpClient) {
+    public DirectMsgSender(HttpClient httpClient, MetricManager metricManager) {
         this.httpClient = httpClient;
+        this.metricManager = metricManager;
     }
 
     @Override
     public P2PMsgResponse send(List<Message> messages, String URL) throws Exception {
+        final Metric metric = metricManager.newMetric(new StringBuilder().append(MsgSender.MSG_SENDER).append(".")
+                                                                         .append(MsgSender.SEND).toString());
+
         final P2PMsgRequest.Builder p2pMsgRequest = P2PMsgRequest.newBuilder();
         final String fromUser = messages.get(0).getFromUser();
         final String toUser = messages.get(0).getToUser();
@@ -37,7 +44,13 @@ public class DirectMsgSender implements MsgSender {
         }
 
         final HttpResponse response = httpClient.post(new URL(URL + "/p2pMessage"), p2pMsgRequest.build());
+
+        metric.timerStop();
+
         return P2PMsgResponse.parseFrom(response.getContent());
     }
+
+    @Override
+    public void close() {};
 
 }

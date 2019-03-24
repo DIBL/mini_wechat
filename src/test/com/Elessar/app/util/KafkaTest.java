@@ -50,7 +50,7 @@ public class KafkaTest {
     @Test
     public void sendMsgTest() {
         final int msgCountToSend = 10;
-        final MsgSender msgSender = new KafkaMsgSender();
+        final MsgSender msgSender = new KafkaMsgSender(new MetricManager("Test", 10000));
         final MsgQueue msgQueue = new KafkaMsgQueue(testTopicB);
         final P2PMsgRequest.Builder p2pMsgRequest = P2PMsgRequest.newBuilder();
 

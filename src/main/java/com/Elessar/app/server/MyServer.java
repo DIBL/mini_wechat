@@ -38,7 +38,7 @@ public class MyServer {
         this.port = port;
         this.db = db;
         this.httpClient = new HttpClient(new NetHttpTransport().createRequestFactory());
-        this.msgSender = new KafkaMsgSender();
+        this.msgSender = new KafkaMsgSender(metricManager);
         this.metricManager = metricManager;
         this.users = users;
     }
@@ -56,9 +56,9 @@ public class MyServer {
             server.start();
             logger.info("Server started at port {}", port);
 
-
         } catch (IOException e) {
             logger.fatal("Caught exception during server startup: {}", e.getMessage());
+            msgSender.close();
         }
     }
 
