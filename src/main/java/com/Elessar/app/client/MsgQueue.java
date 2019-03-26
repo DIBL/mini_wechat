@@ -8,6 +8,7 @@ import java.util.List;
  */
 public interface MsgQueue {
 
+    // All implementations should not return null
     List<String> poll(Duration timeout) throws Exception;
 
     void close();

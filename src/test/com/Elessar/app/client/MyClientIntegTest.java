@@ -42,6 +42,8 @@ public class MyClientIntegTest {
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
+        final String mode = "pull";
+
         // Setup DB
         mongoDB = MongoClients.create("mongodb://localhost:27017").getDatabase("MyClientIntegTest");
         final MetricManager serverMetricManager = new MetricManager("ServerMetric", 1000000);
@@ -72,11 +74,23 @@ public class MyClientIntegTest {
                         }
                 );
 
-        final MyServer server = new MyServer("localhost", serverPort, db, users, serverMetricManager);
+        final MyServer server = new MyServer("localhost", serverPort, db, users, mode, serverMetricManager);
         server.run();
+
+        // Setup clients
+        clientA_Port = 4000;
+        clientB_Port = 5000;
 
         clientA = new MyClient(serverURL, clientMetricManager);
         clientB = new MyClient(serverURL, clientMetricManager);
+
+        if ("push".equals(mode)) {
+            final MyClientServer clientA_Server = new MyClientServer("localhost", clientA_Port, new BlockingMsgQueue(), clientMetricManager);
+            final MyClientServer clientB_Server = new MyClientServer("localhost", clientB_Port, new BlockingMsgQueue(), clientMetricManager);
+
+            clientA_Server.run();
+            clientB_Server.run();
+        }
     }
 
     @Test

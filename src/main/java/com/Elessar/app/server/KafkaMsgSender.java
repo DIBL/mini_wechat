@@ -53,6 +53,15 @@ public class KafkaMsgSender implements MsgSender {
         final RecordMetadata metadata = producer.send(record).get();    // Synchronous send and wait for ack before proceed
 
         logger.trace("Message sent to Kafka server at topic " + metadata.topic() + " partition " + metadata.partition() + " with offset " + metadata.offset());
+
+        /**
+         * Assumption: Messages stored in Kafka will be eventually delivered to the users by Kafka
+         * Case may fail:
+         *   Messages stored in Kafka get lost before client able to pull them down
+         *   Possible cases:
+         *      1. client crashes and not able to pull during Kafka retention period
+         *      2. Kafka cluster crash and lost all replication
+         */
         p2pMsgResponse.setSuccess(true).setIsDelivered(true);
 
         metric.timerStop();

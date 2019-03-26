@@ -29,12 +29,14 @@ public class P2PMsgHandler implements HttpHandler {
     private final MsgSender msgSender;
     private final LoadingCache<String, User> users;
     private final MetricManager metricManager;
+    private final String mode;
 
-    public P2PMsgHandler(MyDatabase db, HttpClient httpClient, MsgSender msgSender, LoadingCache<String, User> users, MetricManager metricManager) {
+    public P2PMsgHandler(MyDatabase db, HttpClient httpClient, MsgSender msgSender, LoadingCache<String, User> users, String mode, MetricManager metricManager) {
         this.db = db;
         this.httpClient = httpClient;
         this.msgSender = msgSender;
         this.users = users;
+        this.mode = mode;
         this.metricManager = metricManager;
     }
 
@@ -83,7 +85,11 @@ public class P2PMsgHandler implements HttpHandler {
                     logger.debug("Messages stored in database successfully");
 
                     if (existingUser.getOnline()) {
-                        p2pMsgResponse.mergeFrom(msgSender.send(messages, existingUser.getName()));
+                        if ("pull".equals(mode)) {
+                            p2pMsgResponse.mergeFrom(msgSender.send(messages, existingUser.getName()));
+                        } else {
+                            p2pMsgResponse.mergeFrom(msgSender.send(messages, existingUser.getURL()));
+                        }
 
                         if (p2pMsgResponse.getSuccess() && p2pMsgResponse.getIsDelivered()) {
                             logger.debug("Message successfully sent from {} to {}", fromUser, toUser);

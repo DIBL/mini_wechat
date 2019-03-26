@@ -15,7 +15,7 @@ import java.util.List;
  * Created by Hans on 3/18/19.
  */
 public class KafkaMsgQueue implements MsgQueue {
-    private Consumer<Long, String> consumer;
+    private final Consumer<Long, String> consumer;
 
     public KafkaMsgQueue(String topic) {
         topic = topic.replaceAll("\\s", "");

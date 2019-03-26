@@ -227,7 +227,7 @@
             <configuration>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>com.Elessar.app.ClientMain</mainClass>
+                  <mainClass>com.Elessar.app.ClientConsole</mainClass>
                 </transformer>
               </transformers>
               <filters>

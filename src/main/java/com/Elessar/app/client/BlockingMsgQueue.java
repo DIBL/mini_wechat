@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -12,8 +13,8 @@ import java.util.concurrent.TimeUnit;
 public class BlockingMsgQueue implements MsgQueue {
     private final BlockingQueue<String> queue;
 
-    public BlockingMsgQueue(BlockingQueue<String> queue) {
-        this.queue = queue;
+    public BlockingMsgQueue() {
+        this.queue = new LinkedBlockingQueue<>();
     }
 
     @Override
@@ -25,4 +26,8 @@ public class BlockingMsgQueue implements MsgQueue {
 
     @Override
     public void close() {}
+
+    public void put(String str) throws InterruptedException {
+        queue.put(str);
+    }
 }

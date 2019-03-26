@@ -23,9 +23,19 @@ import java.util.logging.Level;
  */
 
 public class ServerMain {
+    /**
+     *
+     * @param args [0] push or pull mode
+     */
     public static void main(String[] args){
         Logger mongoLogger = Logger.getLogger( "org.mongodb.driver" );
         mongoLogger.setLevel(Level.SEVERE); // e.g. or Log.WARNING, etc.
+        final String mode = args[0];
+
+        if (!"push".equals(mode) && !"pull".equals(mode)) {
+            throw new RuntimeException(mode + "mode is not supported");
+        }
+
         final MetricManager metricManager = new MetricManager("ServerMetric", 100);
         final MyDatabase db = new MongoDB(MongoClients.create("mongodb://localhost:27017").getDatabase("myDB"), metricManager);
         final LoadingCache<String, User> users = CacheBuilder.newBuilder()
@@ -46,7 +56,8 @@ public class ServerMain {
                             }
                     );
 
-        final MyServer server = new MyServer("localhost", 9000, db, users, metricManager);
+        final MyServer server = new MyServer("localhost", 9000, db, users, mode, metricManager);
+
         server.run();
         //testProtoBuf();
     }

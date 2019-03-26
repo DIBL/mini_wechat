@@ -12,44 +12,50 @@ import org.apache.logging.log4j.Logger;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.time.Duration;
-import java.util.List;
-
 
 /**
  * Created by Hans on 1/13/19.
  */
-public class ClientMain {
+public class ClientConsole {
     private static final int REGISTER = 1, LOG_ON = 2, P2P_MSG = 3, LOG_OFF = 4;
-    private static final Logger logger = LogManager.getLogger(ClientMain.class);
+    private static final Logger logger = LogManager.getLogger(ClientConsole.class);
     private static String currUser = "";
     private static MsgQueue msgQueue = null;
 
     /**
      *
-     * @param args [0] server address, [1] server port number, [2] client port number
+     * @param args [0] server address, [1] server port number, [2] client port number, [3] pull or push mode
      */
-    public static void main(String[] args){
+    public static void main(String[] args) {
         final MetricManager metricManager = new MetricManager("ClientMetric", 100);
         final String serverAddress = args[0];
         final int serverPort = Integer.valueOf(args[1]);
         final int clientPort = Integer.valueOf(args[2]);
+        final String mode = args[3];
+
+        if (!"push".equals(mode) && !"pull".equals(mode)) {
+            throw new RuntimeException(mode + "mode is not supported");
+        }
+
         final String serverURL = new StringBuilder().append("http://")
                                                            .append(serverAddress).append(":")
                                                            .append(serverPort).toString();
 
         final MyClient client = new MyClient(serverURL, metricManager);
 
+        if ("push".equals(mode)) {
+            final BlockingMsgQueue blockingMsgQueue = new BlockingMsgQueue();
+            final MyClientServer clientServer = new MyClientServer("localhost", clientPort, blockingMsgQueue, metricManager);
+            msgQueue = blockingMsgQueue;
+        }
+
         try (final BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in))) {
             while (true) {
                 try {
                     // user has logged on
                     if (isLogOn()) {
-                        List<String> messages = msgQueue.poll(Duration.ofSeconds(1L));
-
-                        if (messages != null && !messages.isEmpty()) {
-                            for (String message : messages) {
-                                System.out.println(message);
-                            }
+                        for (String message : msgQueue.poll(Duration.ofSeconds(1L))) {
+                            System.out.println(message);
                         }
                     }
 
@@ -109,7 +115,11 @@ public class ClientMain {
                                 if (logonResponse.getSuccess()) {
                                     logger.info("User {} log on successfully", fromUser);
                                     currUser = fromUser;
-                                    msgQueue = new KafkaMsgQueue(currUser);
+
+                                    if ("pull".equals(mode)) {
+                                        msgQueue = new KafkaMsgQueue(currUser);
+                                    }
+
                                 } else {
                                     logger.error("User {} fail to log on, because {}", fromUser, logonResponse.getFailReason());
                                 }
@@ -187,6 +197,6 @@ public class ClientMain {
     }
 
     private static boolean isLogOn() {
-        return !currUser.isEmpty() && msgQueue != null;
+        return !currUser.isEmpty();
     }
 }

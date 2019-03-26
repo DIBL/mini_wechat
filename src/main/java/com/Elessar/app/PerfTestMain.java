@@ -1,5 +1,6 @@
 package com.Elessar.app;
 
+import com.Elessar.app.client.BlockingMsgQueue;
 import com.Elessar.app.client.MyClient;
 import com.Elessar.app.client.MyClientServer;
 import com.Elessar.app.util.MetricManager;
@@ -82,9 +83,7 @@ public class PerfTestMain {
 
         // Setup client server
         final MetricManager metricManager = new MetricManager("ClientMetric", 100);
-        final BlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
-
-        final MyClientServer clientServer = new MyClientServer("localhost", port, messageQueue, metricManager);
+        final MyClientServer clientServer = new MyClientServer("localhost", port, new BlockingMsgQueue(), metricManager);
         clientServer.run();
 
 

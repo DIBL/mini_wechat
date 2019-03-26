@@ -44,10 +44,11 @@ public class DirectMsgSender implements MsgSender {
         }
 
         final HttpResponse response = httpClient.post(new URL(URL + "/p2pMessage"), p2pMsgRequest.build());
+        final P2PMsgResponse p2PMsgResponse = P2PMsgResponse.parseFrom(response.getContent());
 
         metric.timerStop();
 
-        return P2PMsgResponse.parseFrom(response.getContent());
+        return p2PMsgResponse;
     }
 
     @Override

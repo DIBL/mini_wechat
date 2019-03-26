@@ -1,5 +1,6 @@
 package com.Elessar.app;
 
+import com.Elessar.app.client.BlockingMsgQueue;
 import com.Elessar.app.client.MyClientServer;
 import com.Elessar.app.util.MetricManager;
 
@@ -16,10 +17,8 @@ public class SetupClientMain {
      */
     public static void main(String[] args){
         final MetricManager metricManager = new MetricManager("ClientMetric", 100);
-        final BlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
-
         final int clientPort = Integer.valueOf(args[0]);
-        final MyClientServer clientServer = new MyClientServer("localhost", clientPort, messageQueue, metricManager);
+        final MyClientServer clientServer = new MyClientServer("localhost", clientPort, new BlockingMsgQueue(), metricManager);
         clientServer.run();
     }
 }

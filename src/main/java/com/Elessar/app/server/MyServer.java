@@ -32,15 +32,17 @@ public class MyServer {
     private final MetricManager metricManager;
     private final LoadingCache<String, User> users;
     private HttpServer server;
+    private final String mode;
 
-    public MyServer(String serverName, int port, MyDatabase db, LoadingCache<String, User> users, MetricManager metricManager) {
+    public MyServer(String serverName, int port, MyDatabase db, LoadingCache<String, User> users, String mode, MetricManager metricManager) {
         this.serverName = serverName;
         this.port = port;
         this.db = db;
         this.httpClient = new HttpClient(new NetHttpTransport().createRequestFactory());
-        this.msgSender = new KafkaMsgSender(metricManager);
         this.metricManager = metricManager;
         this.users = users;
+        this.mode = mode;
+        this.msgSender = "pull".equals(mode) ? new KafkaMsgSender(metricManager) : new DirectMsgSender(httpClient, metricManager);
     }
 
     public void run() {
@@ -49,9 +51,9 @@ public class MyServer {
             server.createContext("/", new RootHandler());
             server.createContext("/echo", new EchoHandler());
             server.createContext("/register", new RegisterHandler(db, users, metricManager));
-            server.createContext("/logon", new LogOnHandler(db, msgSender, users, metricManager));
+            server.createContext("/logon", new LogOnHandler(db, msgSender, users, mode, metricManager));
             server.createContext("/logoff", new LogOffHandler(db, users, metricManager));
-            server.createContext("/p2pMessage", new P2PMsgHandler(db, httpClient, msgSender, users, metricManager));
+            server.createContext("/p2pMessage", new P2PMsgHandler(db, httpClient, msgSender, users, mode, metricManager));
             server.setExecutor(Executors.newCachedThreadPool());
             server.start();
             logger.info("Server started at port {}", port);
