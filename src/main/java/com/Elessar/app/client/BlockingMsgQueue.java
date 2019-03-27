@@ -1,5 +1,7 @@
 package com.Elessar.app.client;
 
+import com.Elessar.app.util.MetricManager;
+
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,9 +14,12 @@ import java.util.concurrent.TimeUnit;
  */
 public class BlockingMsgQueue implements MsgQueue {
     private final BlockingQueue<String> queue;
+    private final MyClientServer clientServer;
 
-    public BlockingMsgQueue() {
+    public BlockingMsgQueue(int clientPort, MetricManager metricManager) {
         this.queue = new LinkedBlockingQueue<>();
+        this.clientServer = new MyClientServer("localhost", clientPort, this, metricManager);
+        clientServer.run();
     }
 
     @Override

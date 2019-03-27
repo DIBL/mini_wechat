@@ -17,6 +17,7 @@ import java.util.List;
  * Created by Hans on 1/29/19.
  */
 public class DirectMsgSender implements MsgSender {
+    private final String DIRECT_MSG_SENDER = "directMsgSender";
     private static final Logger logger = LogManager.getLogger(DirectMsgSender.class);
     private final MetricManager metricManager;
     private final HttpClient httpClient;
@@ -28,7 +29,7 @@ public class DirectMsgSender implements MsgSender {
 
     @Override
     public P2PMsgResponse send(List<Message> messages, String URL) throws Exception {
-        final Metric metric = metricManager.newMetric(new StringBuilder().append(MsgSender.MSG_SENDER).append(".")
+        final Metric metric = metricManager.newMetric(new StringBuilder().append(DIRECT_MSG_SENDER).append(".")
                                                                          .append(MsgSender.SEND).toString());
 
         final P2PMsgRequest.Builder p2pMsgRequest = P2PMsgRequest.newBuilder();

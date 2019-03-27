@@ -18,21 +18,21 @@ import java.util.List;
  * Created by Hans on 3/17/19.
  */
 public class KafkaMsgSender implements MsgSender {
-    private final String KAFKA = "kafka";
+    private final String KAFKA_MSG_SENDER = "kafkaMsgSender";
     private static final Logger logger = LogManager.getLogger(KafkaMsgSender.class);
     private final MetricManager metricManager;
     private final Producer<Long, String> producer;
 
-    public KafkaMsgSender(MetricManager metricManager) {
+    public KafkaMsgSender(String producerClientID, MetricManager metricManager) {
         this.metricManager = metricManager;
         final Serializer<Long> keySerializer = new LongSerializer();
         final Serializer<String> valueSerializer = new StringSerializer();
-        producer = ProducerCreator.create(keySerializer, valueSerializer);
+        producer = ProducerCreator.create(producerClientID, keySerializer, valueSerializer);
     }
 
     @Override
     public P2PMsgResponse send(List<Message> messages, String topic) throws Exception {
-        final Metric metric = metricManager.newMetric(new StringBuilder().append(MsgSender.MSG_SENDER).append(".")
+        final Metric metric = metricManager.newMetric(new StringBuilder().append(KAFKA_MSG_SENDER).append(".")
                                                                          .append(MsgSender.SEND).toString());
 
         final P2PMsgRequest.Builder p2pMsgRequest = P2PMsgRequest.newBuilder();
@@ -61,6 +61,7 @@ public class KafkaMsgSender implements MsgSender {
          *   Possible cases:
          *      1. client crashes and not able to pull during Kafka retention period
          *      2. Kafka cluster crash and lost all replication
+         *      3. client crashes before finish processing message but after commit to Kafka server
          */
         p2pMsgResponse.setSuccess(true).setIsDelivered(true);
 

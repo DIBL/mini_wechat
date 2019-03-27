@@ -5,17 +5,12 @@ import com.Elessar.app.client.MsgQueue;
 import com.Elessar.app.server.KafkaMsgSender;
 import com.Elessar.app.server.Message;
 import com.Elessar.app.server.MsgSender;
-import com.Elessar.app.util.kafka.ConsumerCreator;
 import com.Elessar.app.util.kafka.KafkaConstants;
 import com.Elessar.proto.P2Pmsg;
 import com.Elessar.proto.P2Pmsg.P2PMsgRequest;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
-import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.After;
 import org.junit.Before;
@@ -50,7 +45,7 @@ public class KafkaTest {
     @Test
     public void sendMsgTest() {
         final int msgCountToSend = 10;
-        final MsgSender msgSender = new KafkaMsgSender(new MetricManager("Test", 10000));
+        final MsgSender msgSender = new KafkaMsgSender("testClient", new MetricManager("Test", 10000));
         final MsgQueue msgQueue = new KafkaMsgQueue(testTopicB);
         final P2PMsgRequest.Builder p2pMsgRequest = P2PMsgRequest.newBuilder();
 

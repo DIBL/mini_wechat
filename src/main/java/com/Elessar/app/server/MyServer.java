@@ -24,8 +24,7 @@ import com.sun.net.httpserver.HttpServer;
 public class MyServer {
     public static final String SERVER = "server", LOGON = "logon", LOGOFF = "logoff", REGISTER = "register", P2P_MSG = "p2pMsg";
     private static final Logger logger = LogManager.getLogger(MyServer.class);
-    private final String serverName;
-    private final int port;
+    private final InetSocketAddress serverAddress;
     private final MyDatabase db;
     private final HttpClient httpClient;
     private final MsgSender msgSender;
@@ -35,19 +34,18 @@ public class MyServer {
     private final String mode;
 
     public MyServer(String serverName, int port, MyDatabase db, LoadingCache<String, User> users, String mode, MetricManager metricManager) {
-        this.serverName = serverName;
-        this.port = port;
         this.db = db;
         this.httpClient = new HttpClient(new NetHttpTransport().createRequestFactory());
         this.metricManager = metricManager;
         this.users = users;
         this.mode = mode;
-        this.msgSender = "pull".equals(mode) ? new KafkaMsgSender(metricManager) : new DirectMsgSender(httpClient, metricManager);
+        this.serverAddress = new InetSocketAddress(serverName, port);
+        this.msgSender = "pull".equals(mode) ? new KafkaMsgSender(serverAddress.toString(), metricManager) : new DirectMsgSender(httpClient, metricManager);
     }
 
     public void run() {
         try {
-            server = HttpServer.create(new InetSocketAddress(serverName, port), 0);
+            server = HttpServer.create(serverAddress, 0);
             server.createContext("/", new RootHandler());
             server.createContext("/echo", new EchoHandler());
             server.createContext("/register", new RegisterHandler(db, users, metricManager));
@@ -56,7 +54,7 @@ public class MyServer {
             server.createContext("/p2pMessage", new P2PMsgHandler(db, httpClient, msgSender, users, mode, metricManager));
             server.setExecutor(Executors.newCachedThreadPool());
             server.start();
-            logger.info("Server started at port {}", port);
+            logger.info("Server started at port {}", serverAddress.getPort());
 
         } catch (IOException e) {
             logger.fatal("Caught exception during server startup: {}", e.getMessage());

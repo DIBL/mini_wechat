@@ -34,7 +34,7 @@ public class ClientConsole {
         final String mode = args[3];
 
         if (!"push".equals(mode) && !"pull".equals(mode)) {
-            throw new RuntimeException(mode + "mode is not supported");
+            throw new RuntimeException(mode + " mode is not supported");
         }
 
         final String serverURL = new StringBuilder().append("http://")
@@ -42,12 +42,6 @@ public class ClientConsole {
                                                            .append(serverPort).toString();
 
         final MyClient client = new MyClient(serverURL, metricManager);
-
-        if ("push".equals(mode)) {
-            final BlockingMsgQueue blockingMsgQueue = new BlockingMsgQueue();
-            final MyClientServer clientServer = new MyClientServer("localhost", clientPort, blockingMsgQueue, metricManager);
-            msgQueue = blockingMsgQueue;
-        }
 
         try (final BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in))) {
             while (true) {
@@ -115,10 +109,7 @@ public class ClientConsole {
                                 if (logonResponse.getSuccess()) {
                                     logger.info("User {} log on successfully", fromUser);
                                     currUser = fromUser;
-
-                                    if ("pull".equals(mode)) {
-                                        msgQueue = new KafkaMsgQueue(currUser);
-                                    }
+                                    msgQueue = "pull".equals(mode) ? new KafkaMsgQueue(currUser) : new BlockingMsgQueue(clientPort, metricManager);
 
                                 } else {
                                     logger.error("User {} fail to log on, because {}", fromUser, logonResponse.getFailReason());
@@ -170,6 +161,7 @@ public class ClientConsole {
                                     logger.info("User {} log off successfully", currUser);
                                     currUser = "";
                                     msgQueue = null;
+                                    msgQueue.close();
                                 } else {
                                     logger.info("User {} fail to log off, because {}", currUser, logoffResponse.getFailReason());
                                 }

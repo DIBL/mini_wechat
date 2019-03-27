@@ -1,11 +1,8 @@
 package com.Elessar.app;
 
 import com.Elessar.app.client.BlockingMsgQueue;
-import com.Elessar.app.client.MyClientServer;
+import com.Elessar.app.client.MsgQueue;
 import com.Elessar.app.util.MetricManager;
-
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Created by Hans on 3/6/19.
@@ -18,7 +15,6 @@ public class SetupClientMain {
     public static void main(String[] args){
         final MetricManager metricManager = new MetricManager("ClientMetric", 100);
         final int clientPort = Integer.valueOf(args[0]);
-        final MyClientServer clientServer = new MyClientServer("localhost", clientPort, new BlockingMsgQueue(), metricManager);
-        clientServer.run();
+        final MsgQueue msgQueue = new BlockingMsgQueue(clientPort, metricManager);
     }
 }

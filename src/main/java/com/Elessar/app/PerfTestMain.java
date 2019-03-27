@@ -1,13 +1,13 @@
 package com.Elessar.app;
 
 import com.Elessar.app.client.BlockingMsgQueue;
+import com.Elessar.app.client.MsgQueue;
 import com.Elessar.app.client.MyClient;
 import com.Elessar.app.client.MyClientServer;
 import com.Elessar.app.util.MetricManager;
 import com.Elessar.proto.P2Pmsg.P2PMsgResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.HashSet;
@@ -83,9 +83,7 @@ public class PerfTestMain {
 
         // Setup client server
         final MetricManager metricManager = new MetricManager("ClientMetric", 100);
-        final MyClientServer clientServer = new MyClientServer("localhost", port, new BlockingMsgQueue(), metricManager);
-        clientServer.run();
-
+        final MsgQueue msgQueue = new BlockingMsgQueue(port, metricManager);
 
         // Setup client
         final String serverURL = new StringBuilder().append("http://127.0.0.1:9000").toString();

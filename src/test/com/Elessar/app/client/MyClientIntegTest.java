@@ -85,11 +85,8 @@ public class MyClientIntegTest {
         clientB = new MyClient(serverURL, clientMetricManager);
 
         if ("push".equals(mode)) {
-            final MyClientServer clientA_Server = new MyClientServer("localhost", clientA_Port, new BlockingMsgQueue(), clientMetricManager);
-            final MyClientServer clientB_Server = new MyClientServer("localhost", clientB_Port, new BlockingMsgQueue(), clientMetricManager);
-
-            clientA_Server.run();
-            clientB_Server.run();
+            final MsgQueue msgQueueA = new BlockingMsgQueue(clientA_Port, clientMetricManager);
+            final MsgQueue msgQueueB = new BlockingMsgQueue(clientB_Port, clientMetricManager);
         }
     }
 

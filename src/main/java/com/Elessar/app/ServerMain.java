@@ -33,7 +33,7 @@ public class ServerMain {
         final String mode = args[0];
 
         if (!"push".equals(mode) && !"pull".equals(mode)) {
-            throw new RuntimeException(mode + "mode is not supported");
+            throw new RuntimeException(mode + " mode is not supported");
         }
 
         final MetricManager metricManager = new MetricManager("ServerMetric", 100);
