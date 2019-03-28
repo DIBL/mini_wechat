@@ -25,10 +25,11 @@ public class MyClientServer {
     private static final Logger logger = LogManager.getLogger(MyClientServer.class);
     private final String serverName;
     private final int port;
-    private final BlockingQueue<String> messageQueue;
+    private final BlockingMsgQueue messageQueue;
     private final MetricManager metricManager;
+    private HttpServer server;
 
-    public MyClientServer(String serverName, int port, BlockingQueue<String> messageQueue, MetricManager metricManager) {
+    public MyClientServer(String serverName, int port, BlockingMsgQueue messageQueue, MetricManager metricManager) {
         this.serverName = serverName;
         this.port = port;
         this.messageQueue = messageQueue;
@@ -37,7 +38,7 @@ public class MyClientServer {
 
     public void run() {
         try {
-            final HttpServer server = HttpServer.create(new InetSocketAddress(serverName, port), 0);
+            server = HttpServer.create(new InetSocketAddress(serverName, port), 0);
             server.createContext("/p2pMessage", new P2PMsgHandler(messageQueue, metricManager));
             server.setExecutor(Executors.newFixedThreadPool(2));
             server.start();
@@ -47,11 +48,15 @@ public class MyClientServer {
         }
     }
 
+    public void stop() {
+        server.stop(0);
+    }
+
     private static class P2PMsgHandler implements HttpHandler {
         private MetricManager metricManager;
-        private BlockingQueue<String> messageQueue;
+        private BlockingMsgQueue messageQueue;
 
-        public P2PMsgHandler (BlockingQueue<String> messageQueue, MetricManager metricManager) {
+        public P2PMsgHandler (BlockingMsgQueue messageQueue, MetricManager metricManager) {
             this.messageQueue = messageQueue;
             this.metricManager = metricManager;
         }

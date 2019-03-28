@@ -1,7 +1,6 @@
 package com.Elessar.app;
 
-import com.Elessar.app.client.MyClient;
-import com.Elessar.app.client.MyClientServer;
+import com.Elessar.app.client.*;
 import com.Elessar.app.util.MetricManager;
 import com.Elessar.proto.Logoff.LogoffResponse;
 import com.Elessar.proto.Logon.LogonResponse;
@@ -12,48 +11,46 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-
+import java.time.Duration;
 
 /**
  * Created by Hans on 1/13/19.
  */
-public class ClientMain {
+public class ClientConsole {
     private static final int REGISTER = 1, LOG_ON = 2, P2P_MSG = 3, LOG_OFF = 4;
-    private static final Logger logger = LogManager.getLogger(ClientMain.class);
+    private static final Logger logger = LogManager.getLogger(ClientConsole.class);
+    private static String currUser = "";
+    private static MsgQueue msgQueue = null;
 
     /**
      *
-     * @param args [0] server address, [1] server port number, [2] client port number
+     * @param args [0] server address, [1] server port number, [2] client port number, [3] pull or push mode
      */
-    public static void main(String[] args){
+    public static void main(String[] args) {
         final MetricManager metricManager = new MetricManager("ClientMetric", 100);
-        final BlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
-
         final String serverAddress = args[0];
         final int serverPort = Integer.valueOf(args[1]);
         final int clientPort = Integer.valueOf(args[2]);
+        final String mode = args[3];
 
+        if (!"push".equals(mode) && !"pull".equals(mode)) {
+            throw new RuntimeException(mode + " mode is not supported");
+        }
 
         final String serverURL = new StringBuilder().append("http://")
                                                            .append(serverAddress).append(":")
                                                            .append(serverPort).toString();
 
         final MyClient client = new MyClient(serverURL, metricManager);
-        final MyClientServer clientServer = new MyClientServer("localhost", clientPort, messageQueue, metricManager);
-
-        clientServer.run();
-
-        String currUser = "";
 
         try (final BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in))) {
             while (true) {
                 try {
-                    String message = messageQueue.poll(1L, TimeUnit.SECONDS);
-                    if (message != null) {
-                        System.out.println(message);
+                    // user has logged on
+                    if (isLogOn()) {
+                        for (String message : msgQueue.poll(Duration.ofSeconds(1L))) {
+                            System.out.println(message);
+                        }
                     }
 
                     System.out.println("1. Register");
@@ -96,7 +93,7 @@ public class ClientMain {
                             break;
 
                         case LOG_ON:
-                            if (!currUser.isEmpty()) {
+                            if (isLogOn()) {
                                 System.out.printf("User %s already log on, please log off first before trying switching to other user account\n", currUser);
                                 break;
                             }
@@ -112,6 +109,8 @@ public class ClientMain {
                                 if (logonResponse.getSuccess()) {
                                     logger.info("User {} log on successfully", fromUser);
                                     currUser = fromUser;
+                                    msgQueue = "pull".equals(mode) ? new KafkaMsgQueue(currUser) : new BlockingMsgQueue(clientPort, metricManager);
+
                                 } else {
                                     logger.error("User {} fail to log on, because {}", fromUser, logonResponse.getFailReason());
                                 }
@@ -122,7 +121,7 @@ public class ClientMain {
 
 
                         case P2P_MSG:
-                            if (currUser.isEmpty()) {
+                            if (!isLogOn()) {
                                 System.out.println("Please log on first !");
                                 break;
                             }
@@ -151,7 +150,7 @@ public class ClientMain {
                             break;
 
                         case LOG_OFF:
-                            if (currUser.isEmpty()) {
+                            if (!isLogOn()) {
                                 System.out.println("Please log on first !");
                                 break;
                             }
@@ -161,6 +160,8 @@ public class ClientMain {
                                 if (logoffResponse.getSuccess()) {
                                     logger.info("User {} log off successfully", currUser);
                                     currUser = "";
+                                    msgQueue.close();
+                                    msgQueue = null;
                                 } else {
                                     logger.info("User {} fail to log off, because {}", currUser, logoffResponse.getFailReason());
                                 }
@@ -182,6 +183,12 @@ public class ClientMain {
 
         } catch (Exception e) {
             logger.error("Cannot read from system input because: {}", e.getMessage());
+        } finally {
+            msgQueue.close();
         }
+    }
+
+    private static boolean isLogOn() {
+        return !currUser.isEmpty();
     }
 }

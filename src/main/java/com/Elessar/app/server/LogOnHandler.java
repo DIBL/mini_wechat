@@ -26,13 +26,15 @@ public class LogOnHandler implements HttpHandler {
     private final MsgSender msgSender;
     private final LoadingCache<String, User> users;
     private final MetricManager metricManager;
+    private final String mode;
 
 
-    public LogOnHandler(MyDatabase db, MsgSender msgSender, LoadingCache<String, User> users, MetricManager metricManager) {
+    public LogOnHandler(MyDatabase db, MsgSender msgSender, LoadingCache<String, User> users, String mode, MetricManager metricManager) {
         this.db = db;
         this.msgSender = msgSender;
         this.users = users;
         this.metricManager = metricManager;
+        this.mode = mode;
     }
 
     @Override
@@ -93,7 +95,11 @@ public class LogOnHandler implements HttpHandler {
 
                 // Get the list of unread messages sent to user
                 List<Message> messages = db.find(new Message(null, userName, null, null, false));
-                sendMessages(messages, clientURL);
+                if ("pull".equals(mode)) {
+                    sendMessages(messages, userName);
+                } else {
+                    sendMessages(messages, clientURL);
+                }
             }
 
             try (final OutputStream os = he.getResponseBody()) {
@@ -104,13 +110,13 @@ public class LogOnHandler implements HttpHandler {
         metric.timerStop();
     }
 
-    private void sendMessages(List<Message> messages, String clientURL) {
+    private void sendMessages(List<Message> messages, String toUser) {
         if (messages.isEmpty()) {
             return;
         }
 
         try {
-            P2PMsgResponse p2pMsgResponse = msgSender.send(messages, clientURL);
+            P2PMsgResponse p2pMsgResponse = msgSender.send(messages, toUser);
 
             if (p2pMsgResponse.getSuccess() && p2pMsgResponse.getIsDelivered()) {
                 db.update(messages, new Message(null, null, null, null, true));
