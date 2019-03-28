@@ -27,6 +27,7 @@ public class MyClientServer {
     private final int port;
     private final BlockingMsgQueue messageQueue;
     private final MetricManager metricManager;
+    private HttpServer server;
 
     public MyClientServer(String serverName, int port, BlockingMsgQueue messageQueue, MetricManager metricManager) {
         this.serverName = serverName;
@@ -37,7 +38,7 @@ public class MyClientServer {
 
     public void run() {
         try {
-            final HttpServer server = HttpServer.create(new InetSocketAddress(serverName, port), 0);
+            server = HttpServer.create(new InetSocketAddress(serverName, port), 0);
             server.createContext("/p2pMessage", new P2PMsgHandler(messageQueue, metricManager));
             server.setExecutor(Executors.newFixedThreadPool(2));
             server.start();
@@ -45,6 +46,10 @@ public class MyClientServer {
         } catch (IOException e) {
             logger.fatal("Caught exception during client server startup at port {}: {}", port, e.getMessage());
         }
+    }
+
+    public void stop() {
+        server.stop(0);
     }
 
     private static class P2PMsgHandler implements HttpHandler {

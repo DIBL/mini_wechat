@@ -30,7 +30,9 @@ public class BlockingMsgQueue implements MsgQueue {
     }
 
     @Override
-    public void close() {}
+    public void close() {
+        clientServer.stop();
+    }
 
     public void put(String str) throws InterruptedException {
         queue.put(str);

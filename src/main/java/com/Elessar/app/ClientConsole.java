@@ -160,8 +160,8 @@ public class ClientConsole {
                                 if (logoffResponse.getSuccess()) {
                                     logger.info("User {} log off successfully", currUser);
                                     currUser = "";
-                                    msgQueue = null;
                                     msgQueue.close();
+                                    msgQueue = null;
                                 } else {
                                     logger.info("User {} fail to log off, because {}", currUser, logoffResponse.getFailReason());
                                 }
