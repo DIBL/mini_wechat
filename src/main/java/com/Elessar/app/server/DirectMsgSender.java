@@ -7,6 +7,7 @@ import com.Elessar.proto.P2Pmsg;
 import com.Elessar.proto.P2Pmsg.P2PMsgRequest;
 import com.Elessar.proto.P2Pmsg.P2PMsgResponse;
 import com.google.api.client.http.HttpResponse;
+import com.google.api.client.http.javanet.NetHttpTransport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import java.net.URL;
@@ -22,8 +23,8 @@ public class DirectMsgSender implements MsgSender {
     private final MetricManager metricManager;
     private final HttpClient httpClient;
 
-    public DirectMsgSender(HttpClient httpClient, MetricManager metricManager) {
-        this.httpClient = httpClient;
+    public DirectMsgSender(MetricManager metricManager) {
+        this.httpClient = new HttpClient(new NetHttpTransport().createRequestFactory());
         this.metricManager = metricManager;
     }
 

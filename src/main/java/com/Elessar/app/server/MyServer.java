@@ -9,38 +9,38 @@ import java.util.concurrent.Executors;
 
 import com.Elessar.app.util.MetricManager;
 import com.Elessar.database.MyDatabase;
-import com.Elessar.app.util.HttpClient;
-import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.common.cache.LoadingCache;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 /**
  * Created by Hans on 1/10/19.
  */
+@Component
 public class MyServer {
     public static final String SERVER = "server", LOGON = "logon", LOGOFF = "logoff", REGISTER = "register", P2P_MSG = "p2pMsg";
     private static final Logger logger = LogManager.getLogger(MyServer.class);
     private final InetSocketAddress serverAddress;
     private final MyDatabase db;
-    private final HttpClient httpClient;
     private final MsgSender msgSender;
     private final MetricManager metricManager;
     private final LoadingCache<String, User> users;
     private HttpServer server;
     private final String mode;
 
-    public MyServer(String serverName, int port, MyDatabase db, LoadingCache<String, User> users, String mode, MetricManager metricManager) {
-        this.db = db;
-        this.httpClient = new HttpClient(new NetHttpTransport().createRequestFactory());
-        this.metricManager = metricManager;
-        this.users = users;
+    @Autowired
+    public MyServer(String mode, MyDatabase db, LoadingCache<String, User> users, MsgSender msgSender, InetSocketAddress serverAddress, MetricManager metricManager) {
         this.mode = mode;
-        this.serverAddress = new InetSocketAddress(serverName, port);
-        this.msgSender = "pull".equals(mode) ? new KafkaMsgSender(serverAddress.toString(), metricManager) : new DirectMsgSender(httpClient, metricManager);
+        this.db = db;
+        this.users = users;
+        this.msgSender = msgSender;
+        this.serverAddress = serverAddress;
+        this.metricManager = metricManager;
     }
 
     public void run() {
@@ -51,7 +51,7 @@ public class MyServer {
             server.createContext("/register", new RegisterHandler(db, users, metricManager));
             server.createContext("/logon", new LogOnHandler(db, msgSender, users, mode, metricManager));
             server.createContext("/logoff", new LogOffHandler(db, users, metricManager));
-            server.createContext("/p2pMessage", new P2PMsgHandler(db, httpClient, msgSender, users, mode, metricManager));
+            server.createContext("/p2pMessage", new P2PMsgHandler(db, msgSender, users, mode, metricManager));
             server.setExecutor(Executors.newCachedThreadPool());
             server.start();
             logger.info("Server started at port {}", serverAddress.getPort());

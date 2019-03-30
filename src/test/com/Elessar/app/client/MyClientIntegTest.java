@@ -1,8 +1,7 @@
 package com.Elessar.app.client;
 
-import com.Elessar.app.server.Message;
-import com.Elessar.app.server.MyServer;
-import com.Elessar.app.server.User;
+import com.Elessar.app.server.*;
+import com.Elessar.app.util.HttpClient;
 import com.Elessar.app.util.MetricManager;
 import com.Elessar.database.MongoDB;
 import com.Elessar.database.MyDatabase;
@@ -10,6 +9,7 @@ import com.Elessar.proto.Logoff.LogoffResponse;
 import com.Elessar.proto.Logon.LogonResponse;
 import com.Elessar.proto.P2Pmsg.P2PMsgResponse;
 import com.Elessar.proto.Registration.RegistrationResponse;
+import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -21,6 +21,7 @@ import com.mongodb.client.model.Indexes;
 import org.bson.Document;
 import org.junit.*;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -74,7 +75,14 @@ public class MyClientIntegTest {
                         }
                 );
 
-        final MyServer server = new MyServer("localhost", serverPort, db, users, mode, serverMetricManager);
+        MsgSender msgSender = null;
+        if ("pull".equals(mode)) {
+            msgSender = new KafkaMsgSender(new InetSocketAddress("localhost", serverPort).toString(), serverMetricManager);
+        } else {
+            msgSender = new DirectMsgSender(serverMetricManager);
+        }
+
+        final MyServer server = new MyServer(mode, db, users, msgSender, new InetSocketAddress("localhost", serverPort), serverMetricManager);
         server.run();
 
         // Setup clients

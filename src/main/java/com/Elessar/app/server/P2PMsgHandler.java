@@ -1,6 +1,5 @@
 package com.Elessar.app.server;
 
-import com.Elessar.app.util.HttpClient;
 import com.Elessar.app.util.Metric;
 import com.Elessar.app.util.MetricManager;
 import com.Elessar.database.MyDatabase;
@@ -25,15 +24,13 @@ import java.util.List;
 public class P2PMsgHandler implements HttpHandler {
     private static final Logger logger = LogManager.getLogger(P2PMsgHandler.class);
     private final MyDatabase db;
-    private final HttpClient httpClient;
     private final MsgSender msgSender;
     private final LoadingCache<String, User> users;
     private final MetricManager metricManager;
     private final String mode;
 
-    public P2PMsgHandler(MyDatabase db, HttpClient httpClient, MsgSender msgSender, LoadingCache<String, User> users, String mode, MetricManager metricManager) {
+    public P2PMsgHandler(MyDatabase db, MsgSender msgSender, LoadingCache<String, User> users, String mode, MetricManager metricManager) {
         this.db = db;
-        this.httpClient = httpClient;
         this.msgSender = msgSender;
         this.users = users;
         this.mode = mode;
