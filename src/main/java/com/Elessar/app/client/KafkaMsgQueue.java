@@ -24,7 +24,6 @@ public class KafkaMsgQueue implements MsgQueue {
 
     @Override
     public List<String> poll(Duration timeout) throws Exception {
-        System.out.println("This is pull mode in client");
         final ConsumerRecords<Long, String> consumerRecords = consumer.poll(timeout);
         final List<String> messageList = new ArrayList<>();
         for (ConsumerRecord<Long, String> record : consumerRecords) {

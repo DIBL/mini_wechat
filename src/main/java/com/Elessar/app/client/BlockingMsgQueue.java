@@ -24,7 +24,6 @@ public class BlockingMsgQueue implements MsgQueue {
 
     @Override
     public List<String> poll(Duration timeout) throws Exception {
-        System.out.println("This is push mode in client");
         final List<String> messageList = new ArrayList<>();
         //BlockingQueue return the head of this queue, or null if the specified waiting time elapses before an element is available
         final String message = queue.poll(timeout.getSeconds(), TimeUnit.SECONDS);
