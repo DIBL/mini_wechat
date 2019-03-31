@@ -1,7 +1,7 @@
 package com.Elessar.app;
 
 import com.Elessar.app.server.MyServer;
-import com.Elessar.config.server.ServerConfig;
+import com.Elessar.config.ServerConfig;
 import com.example.tutorial.Addressbook.Person;
 
 import java.io.*;
@@ -16,10 +16,6 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
  */
 
 public class ServerMain {
-    /**
-     *
-     * @param args [0] push or pull mode
-     */
     public static void main(String[] args){
         Logger mongoLogger = Logger.getLogger( "org.mongodb.driver" );
         mongoLogger.setLevel(Level.SEVERE); // e.g. or Log.WARNING, etc.

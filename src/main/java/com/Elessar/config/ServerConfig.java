@@ -1,4 +1,4 @@
-package com.Elessar.config.server;
+package com.Elessar.config;
 import com.Elessar.app.server.DirectMsgSender;
 import com.Elessar.app.server.KafkaMsgSender;
 import com.Elessar.app.server.MsgSender;
@@ -22,15 +22,15 @@ import java.util.concurrent.TimeUnit;
 
 @Configuration
 @ComponentScan("com.Elessar.app.server")
-@PropertySource("classpath:server.properties")
+@PropertySource("file:/Users/hans/Self-Learning/Project/mini-wechat/target/server.properties")
 public class ServerConfig {
-    @Value ("${mode}")
+    @Value ("${server.mode}")
     private String mode;
 
-    @Value ("${port}")
+    @Value ("${server.port}")
     private Integer port;
 
-    @Value ("${cache_timeToExpire}")
+    @Value ("${server.cache_time_to_expire}")
     private Long ttl;
 
     @Bean

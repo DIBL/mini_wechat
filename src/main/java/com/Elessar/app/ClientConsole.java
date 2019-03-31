@@ -1,14 +1,15 @@
 package com.Elessar.app;
 
 import com.Elessar.app.client.*;
-import com.Elessar.app.util.MetricManager;
+import com.Elessar.config.ClientConfig;
 import com.Elessar.proto.Logoff.LogoffResponse;
 import com.Elessar.proto.Logon.LogonResponse;
 import com.Elessar.proto.P2Pmsg.P2PMsgResponse;
 import com.Elessar.proto.Registration.RegistrationResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.time.Duration;
@@ -22,26 +23,9 @@ public class ClientConsole {
     private static String currUser = "";
     private static MsgQueue msgQueue = null;
 
-    /**
-     *
-     * @param args [0] server address, [1] server port number, [2] client port number, [3] pull or push mode
-     */
     public static void main(String[] args) {
-        final MetricManager metricManager = new MetricManager("ClientMetric", 100);
-        final String serverAddress = args[0];
-        final int serverPort = Integer.valueOf(args[1]);
-        final int clientPort = Integer.valueOf(args[2]);
-        final String mode = args[3];
-
-        if (!"push".equals(mode) && !"pull".equals(mode)) {
-            throw new RuntimeException(mode + " mode is not supported");
-        }
-
-        final String serverURL = new StringBuilder().append("http://")
-                                                           .append(serverAddress).append(":")
-                                                           .append(serverPort).toString();
-
-        final MyClient client = new MyClient(serverURL, metricManager);
+        final ApplicationContext context = new AnnotationConfigApplicationContext(ClientConfig.class);
+        final MyClient client = context.getBean(MyClient.class);
 
         try (final BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in))) {
             while (true) {
@@ -65,6 +49,7 @@ public class ClientConsole {
                     final String email;
                     final String phone;
                     final String text;
+
                     switch (option) {
                         case REGISTER:
                             System.out.println("Please enter username");
@@ -105,12 +90,11 @@ public class ClientConsole {
                             password = stdin.readLine();
 
                             try {
-                                final LogonResponse logonResponse = client.logOn(fromUser, password, clientPort);
+                                final LogonResponse logonResponse = client.logOn(fromUser, password, (int) context.getBean("port"));
                                 if (logonResponse.getSuccess()) {
                                     logger.info("User {} log on successfully", fromUser);
                                     currUser = fromUser;
-                                    msgQueue = "pull".equals(mode) ? new KafkaMsgQueue(currUser) : new BlockingMsgQueue(clientPort, metricManager);
-
+                                    msgQueue = context.getBean(MsgQueue.class, currUser);
                                 } else {
                                     logger.error("User {} fail to log on, because {}", fromUser, logonResponse.getFailReason());
                                 }
