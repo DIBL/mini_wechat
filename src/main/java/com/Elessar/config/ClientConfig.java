@@ -3,14 +3,16 @@ package com.Elessar.config;
 import com.Elessar.app.client.BlockingMsgQueue;
 import com.Elessar.app.client.KafkaMsgQueue;
 import com.Elessar.app.client.MsgQueue;
+import com.Elessar.app.util.HttpClient;
 import com.Elessar.app.util.MetricManager;
+import com.google.api.client.http.javanet.NetHttpTransport;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.*;
 
 @Configuration
 @ComponentScan("com.Elessar.app.client")
-@PropertySource("file:/Users/hans/Self-Learning/Project/mini-wechat/target/client.properties")
+@PropertySource("file:${client.root}/client.properties")    // client.root define in command argument
 public class ClientConfig {
     @Value("${client.mode}")
     private String mode;
@@ -20,6 +22,9 @@ public class ClientConfig {
 
     @Value ("${client.server_url}")
     private String serverURL;
+
+    @Value ("${client.metric_manager_buffer_size}")
+    private Integer bufferSize;
 
     @Bean
     public Integer port() {
@@ -33,7 +38,12 @@ public class ClientConfig {
 
     @Bean
     public MetricManager metricManager() {
-        return new MetricManager("ClientMetric", 100);
+        return new MetricManager("ClientMetric", bufferSize);
+    }
+
+    @Bean
+    public HttpClient httpClient() {
+        return new HttpClient(new NetHttpTransport().createRequestFactory());
     }
 
     @Bean

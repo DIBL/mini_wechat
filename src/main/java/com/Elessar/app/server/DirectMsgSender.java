@@ -10,6 +10,8 @@ import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tools.ant.taskdefs.condition.Http;
+
 import java.net.URL;
 import java.util.List;
 
@@ -23,8 +25,8 @@ public class DirectMsgSender implements MsgSender {
     private final MetricManager metricManager;
     private final HttpClient httpClient;
 
-    public DirectMsgSender(MetricManager metricManager) {
-        this.httpClient = new HttpClient(new NetHttpTransport().createRequestFactory());
+    public DirectMsgSender(MetricManager metricManager, HttpClient httpClient) {
+        this.httpClient = httpClient;
         this.metricManager = metricManager;
     }
 

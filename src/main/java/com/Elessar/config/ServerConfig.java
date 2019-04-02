@@ -3,9 +3,11 @@ import com.Elessar.app.server.DirectMsgSender;
 import com.Elessar.app.server.KafkaMsgSender;
 import com.Elessar.app.server.MsgSender;
 import com.Elessar.app.server.User;
+import com.Elessar.app.util.HttpClient;
 import com.Elessar.app.util.MetricManager;
 import com.Elessar.database.MongoDB;
 import com.Elessar.database.MyDatabase;
+import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -22,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 @Configuration
 @ComponentScan("com.Elessar.app.server")
-@PropertySource("file:/Users/hans/Self-Learning/Project/mini-wechat/target/server.properties")
+@PropertySource("file:${server.root}/server.properties")
 public class ServerConfig {
     @Value ("${server.mode}")
     private String mode;
@@ -32,6 +34,21 @@ public class ServerConfig {
 
     @Value ("${server.cache_time_to_expire}")
     private Long ttl;
+
+    @Value ("${server.metric_manager_buffer_size}")
+    private Integer bufferSize;
+
+    @Value ("${server.mongodb.host}")
+    private String mongoHost;
+
+    @Value ("${server.mongodb.port}")
+    private Integer mongoPort;
+
+    @Value ("${server.mongodb.db_name}")
+    private String dbName;
+
+    @Value ("${server.cache.max_size}")
+    private Long cacheSize;
 
     @Bean
     public String mode() {
@@ -45,18 +62,18 @@ public class ServerConfig {
 
     @Bean
     public MetricManager metricManager() {
-        return new MetricManager("ServerMetric", 100);
+        return new MetricManager("ServerMetric", bufferSize);
     }
 
     @Bean
     public MyDatabase db() {
-        return new MongoDB(MongoClients.create("mongodb://localhost:27017").getDatabase("myDB"), metricManager());
+        return new MongoDB(MongoClients.create("mongodb://" + mongoHost + ":" + mongoPort).getDatabase(dbName), metricManager());
     }
 
     @Bean
     public LoadingCache<String, User> cache() {
         return CacheBuilder.newBuilder()
-                .maximumSize(1000)
+                .maximumSize(cacheSize)
                 .expireAfterAccess(ttl, TimeUnit.SECONDS)
                 .build(
                         new CacheLoader<String, User>() {
@@ -84,6 +101,11 @@ public class ServerConfig {
             return new KafkaMsgSender(inetSocketAddress().toString(), metricManager());
         }
 
-        return new DirectMsgSender(metricManager());
+        return new DirectMsgSender(metricManager(), httpClient());
+    }
+
+    @Bean
+    public HttpClient httpClient() {
+        return new HttpClient(new NetHttpTransport().createRequestFactory());
     }
 }

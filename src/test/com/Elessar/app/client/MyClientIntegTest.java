@@ -24,8 +24,6 @@ import org.junit.*;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import static com.mongodb.client.model.Filters.eq;
@@ -79,7 +77,7 @@ public class MyClientIntegTest {
         if ("pull".equals(mode)) {
             msgSender = new KafkaMsgSender(new InetSocketAddress("localhost", serverPort).toString(), serverMetricManager);
         } else {
-            msgSender = new DirectMsgSender(serverMetricManager);
+            msgSender = new DirectMsgSender(serverMetricManager, new HttpClient(new NetHttpTransport().createRequestFactory()));
         }
 
         final MyServer server = new MyServer(mode, db, users, msgSender, new InetSocketAddress("localhost", serverPort), serverMetricManager);
@@ -89,8 +87,8 @@ public class MyClientIntegTest {
         clientA_Port = 4000;
         clientB_Port = 5000;
 
-        clientA = new MyClient(serverURL, clientMetricManager);
-        clientB = new MyClient(serverURL, clientMetricManager);
+        clientA = new MyClient(serverURL, clientMetricManager, new HttpClient(new NetHttpTransport().createRequestFactory()));
+        clientB = new MyClient(serverURL, clientMetricManager, new HttpClient(new NetHttpTransport().createRequestFactory()));
 
         if ("push".equals(mode)) {
             final MsgQueue msgQueueA = new BlockingMsgQueue(clientA_Port, clientMetricManager);

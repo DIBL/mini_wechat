@@ -14,7 +14,6 @@ import com.Elessar.proto.Registration.RegistrationRequest;
 import com.Elessar.proto.P2Pmsg.P2PMsgRequest;
 import com.Elessar.proto.P2Pmsg.P2PMsgResponse;
 import com.google.api.client.http.*;
-import com.google.api.client.http.javanet.NetHttpTransport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,10 +36,10 @@ public class MyClient {
     private final MetricManager metricManager;
 
     @Autowired
-    public MyClient(String hostURL, MetricManager metricManager) {
+    public MyClient(String hostURL, MetricManager metricManager, HttpClient httpClient) {
         this.hostURL = hostURL;
         this.metricManager = metricManager;
-        this.httpClient = new HttpClient(new NetHttpTransport().createRequestFactory());
+        this.httpClient = httpClient;
     }
 
     public P2PMsgResponse sendMessage (String fromUser,

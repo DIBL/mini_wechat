@@ -5,9 +5,13 @@ import com.Elessar.app.client.MsgQueue;
 import com.Elessar.app.client.MyClient;
 import com.Elessar.app.client.MyClientServer;
 import com.Elessar.app.util.MetricManager;
+import com.Elessar.config.ClientConfig;
 import com.Elessar.proto.P2Pmsg.P2PMsgResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.HashSet;
@@ -81,13 +85,11 @@ public class PerfTestMain {
             throw new RuntimeException("Fail to initialize using config settings");
         }
 
-        // Setup client server
-        final MetricManager metricManager = new MetricManager("ClientMetric", 100);
-        final MsgQueue msgQueue = new BlockingMsgQueue(port, metricManager);
-
         // Setup client
-        final String serverURL = new StringBuilder().append("http://127.0.0.1:9000").toString();
-        final MyClient client = new MyClient(serverURL, metricManager);
+        final ApplicationContext context = new AnnotationConfigApplicationContext(ClientConfig.class);
+        final MyClient client = context.getBean(MyClient.class);
+        final MsgQueue msgQueue = context.getBean(MsgQueue.class, username);
+
         final String phone = getRandomNum(10);
 
         client.register(username, password, username + "@163.com", phone);
