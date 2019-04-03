@@ -7,11 +7,8 @@ import com.Elessar.proto.P2Pmsg;
 import com.Elessar.proto.P2Pmsg.P2PMsgRequest;
 import com.Elessar.proto.P2Pmsg.P2PMsgResponse;
 import com.google.api.client.http.HttpResponse;
-import com.google.api.client.http.javanet.NetHttpTransport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.tools.ant.taskdefs.condition.Http;
-
 import java.net.URL;
 import java.util.List;
 
