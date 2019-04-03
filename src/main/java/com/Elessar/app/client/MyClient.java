@@ -14,9 +14,11 @@ import com.Elessar.proto.Registration.RegistrationRequest;
 import com.Elessar.proto.P2Pmsg.P2PMsgRequest;
 import com.Elessar.proto.P2Pmsg.P2PMsgResponse;
 import com.google.api.client.http.*;
-import com.google.api.client.http.javanet.NetHttpTransport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import javax.xml.bind.DatatypeConverter;
 import java.net.URL;
 import java.security.MessageDigest;
@@ -25,6 +27,7 @@ import java.security.MessageDigest;
 /**
  * Created by Hans on 1/13/19.
  */
+@Component
 public class MyClient {
     private static final String CLIENT = "client", P2P_MSG = "p2pMsg", LOGON = "logon", LOGOFF = "logoff", REGISTER = "register";
     private static final Logger logger = LogManager.getLogger(MyClient.class);
@@ -32,10 +35,11 @@ public class MyClient {
     private final HttpClient httpClient;
     private final MetricManager metricManager;
 
-    public MyClient(String hostURL, MetricManager metricManager) {
+    @Autowired
+    public MyClient(String hostURL, MetricManager metricManager, HttpClient httpClient) {
         this.hostURL = hostURL;
         this.metricManager = metricManager;
-        this.httpClient = new HttpClient(new NetHttpTransport().createRequestFactory());
+        this.httpClient = httpClient;
     }
 
     public P2PMsgResponse sendMessage (String fromUser,

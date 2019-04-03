@@ -25,7 +25,12 @@ public class BlockingMsgQueue implements MsgQueue {
     @Override
     public List<String> poll(Duration timeout) throws Exception {
         final List<String> messageList = new ArrayList<>();
-        messageList.add(queue.poll(timeout.getSeconds(), TimeUnit.SECONDS));
+        //BlockingQueue return the head of this queue, or null if the specified waiting time elapses before an element is available
+        final String message = queue.poll(timeout.getSeconds(), TimeUnit.SECONDS);
+
+        if (message != null) {
+            messageList.add(message);
+        }
         return messageList;
     }
 

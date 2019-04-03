@@ -22,7 +22,7 @@ public class DirectMsgSender implements MsgSender {
     private final MetricManager metricManager;
     private final HttpClient httpClient;
 
-    public DirectMsgSender(HttpClient httpClient, MetricManager metricManager) {
+    public DirectMsgSender(MetricManager metricManager, HttpClient httpClient) {
         this.httpClient = httpClient;
         this.metricManager = metricManager;
     }
